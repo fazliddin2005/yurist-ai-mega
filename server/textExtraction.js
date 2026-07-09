@@ -12,7 +12,7 @@
 // Endi haqiqiy parserlar ishlatiladi: PDF uchun "pdf-parse" (PDF.js asosida),
 // DOCX uchun "mammoth". Ikkisi ham 50-60 betlik haqiqiy hujjatlarni to'liq,
 // kirill/lotin harflari bilan to'g'ri o'qiydi.
-const { PDFParse } = require('pdf-parse');
+const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
 const MAX_PDF_PAGES = 200; // haddan tashqari katta faylni cheksiz qayta ishlamaslik uchun xavfsizlik chegarasi
@@ -50,7 +50,7 @@ async function extractText(buffer, mimetype, filename) {
   // ---- PDF ----
   if (mime.includes('pdf') || fname.endsWith('.pdf')) {
     try {
-      const parser = new PDFParse({ data: buffer });
+      const parser = new pdfParse({ data: buffer });
       const result = await parser.getText({ first: MAX_PDF_PAGES });
       const warning = result.total > MAX_PDF_PAGES
         ? `Hujjat ${result.total} betdan iborat -- birinchi ${MAX_PDF_PAGES} bet tahlil qilindi`
