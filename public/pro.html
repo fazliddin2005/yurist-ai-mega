@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yurist AI Pro — Agentlar paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F5F4EF; --card:#ffffff; --ink:#0E1A2B; --ink-soft:#1B2C44; --text:#16202E;
+  --muted:#6B7280; --line:#E6E2D7; --teal:#0E7C86; --teal-dark:#0A5E66; --teal-bg:#E4F1F1;
+  --accent:#B8862E; --gold-bg:#FBF1DE; --green:#1F7A4D; --green-bg:#E4F2E9;
+  --red:#A23B3B; --red-bg:#F7E9E7;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  --font-mono:'IBM Plex Mono',Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh}
+a{color:var(--teal);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none}
+input,select,textarea{font-family:inherit;font-size:14px}
+
+/* ---- TOP BAR ---- */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--ink);color:#fff}
+.topbar .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-size:19px;font-weight:600}
+.topbar .brand .pro-badge{background:var(--accent);color:var(--ink);font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.08em;padding:3px 8px;border-radius:4px}
+.topbar .actions{display:flex;gap:10px;align-items:center}
+.topbar a.back{color:#cfd8e3;font-size:13px}
+.topbar select{background:var(--ink-soft);color:#fff;border:1px solid #2c3e57;border-radius:6px;padding:5px 8px;font-size:13px}
+.topbar .help-btn{background:transparent;border:1px solid #2c3e57;color:#cfd8e3;width:30px;height:30px;border-radius:50%;font-size:15px}
+.topbar .help-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+.wrap{max-width:1060px;margin:0 auto;padding:28px 20px 64px}
+
+/* ---- HERO ---- */
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.hero h1{font-family:var(--font-display);font-size:30px;font-weight:600;color:var(--ink);line-height:1.15}
+.hero p{color:var(--muted);font-size:14px;margin-top:6px;max-width:560px}
+.hero .days-left{font-family:var(--font-mono);font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;white-space:nowrap}
+.hero .days-left b{color:var(--teal-dark)}
+
+/* ---- AGENT CARDS ---- */
+.agents{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+@media(max-width:720px){.agents{grid-template-columns:1fr}}
+.agent-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal)}
+.agent-card.health::before{background:var(--accent)}
+.agent-card h3{font-family:var(--font-display);font-size:18px;color:var(--ink);display:flex;align-items:center;gap:9px}
+.agent-card .dot{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.agent-card .desc{font-size:13px;color:var(--muted);margin:8px 0 12px;line-height:1.5}
+.agent-card .last-run{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.agent-card .last-run b{color:var(--teal-dark);font-weight:500}
+
+/* ---- BUTTONS ---- */
+.btn{border-radius:9px;padding:11px 20px;font-size:14px;font-weight:600;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn-primary{background:var(--teal);color:#fff}
+.btn-gold{background:var(--accent);color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
+.btn-danger{background:transparent;border:1px solid var(--red);color:var(--red)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.run-strip{display:flex;gap:12px;align-items:center;margin-bottom:26px;flex-wrap:wrap}
+.run-strip .spinner{display:none;width:18px;height:18px;border:2.5px solid var(--teal-bg);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.run-strip.loading .spinner{display:block}
+
+/* ---- SECTIONS ---- */
+.section{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:18px}
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.section-head h2{font-family:var(--font-display);font-size:17px;color:var(--ink)}
+.section-head .badge{background:var(--red);color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:2px 9px}
+.section-body{padding:18px 20px}
+
+/* ---- ALERTS ---- */
+.alert-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+.alert-item:last-child{border-bottom:none}
+.alert-item .lv{flex:0 0 auto;width:8px;border-radius:4px}
+.alert-item .lv.critical{background:var(--red)}
+.alert-item .lv.warning{background:var(--accent)}
+.alert-item .lv.info{background:var(--teal)}
+.alert-item .a-title{font-weight:600;font-size:14px;color:var(--ink)}
+.alert-item .a-msg{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.5}
+.alert-item .a-time{font-family:var(--font-mono);font-size:11px;color:#9aa2ad;margin-top:5px}
+.alert-item.unread .a-title::after{content:'•';color:var(--teal);margin-left:6px}
+.empty-note{color:var(--muted);font-size:13.5px;text-align:center;padding:22px 10px}
+
+/* ---- PROFILE FORM ---- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px}
+.field input,.field select{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;color:var(--text)}
+.field input:focus,.field select:focus{outline:2px solid var(--teal-bg);border-color:var(--teal)}
+.field .hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{border:1px solid var(--line);border-radius:20px;padding:6px 14px;font-size:13px;background:#fff;color:var(--ink-soft);user-select:none}
+.chip.on{background:var(--teal-bg);border-color:var(--teal);color:var(--teal-dark);font-weight:600}
+.sub-list{margin-top:8px}
+.sub-row{display:grid;grid-template-columns:2fr 1.4fr 1.2fr auto;gap:8px;margin-bottom:8px;align-items:center}
+.sub-row input,.sub-row select{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.sub-row .rm{background:var(--red-bg);color:var(--red);border-radius:8px;width:34px;height:34px;font-size:15px}
+.add-row{background:var(--teal-bg);color:var(--teal-dark);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600}
+@media(max-width:640px){.sub-row{grid-template-columns:1fr 1fr;grid-auto-rows:auto}}
+.form-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+h4.group-title{font-family:var(--font-display);font-size:14.5px;color:var(--ink);margin:20px 0 8px;padding-top:14px;border-top:1px dashed var(--line)}
+h4.group-title:first-of-type{border-top:none;padding-top:0;margin-top:6px}
+
+
+/* ---- AGENT DETAIL CARDS ---- */
+.agents-detail{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;margin:0 auto 32px;text-align:left}
+@media(max-width:720px){.agents-detail{grid-template-columns:1fr}}
+.agent-detail-card{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:24px;transition:.2s}
+.agent-detail-card.gold{border-color:var(--accent);background:linear-gradient(135deg,#fffdf5,#fff)}
+.ad-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+.ad-icon{font-size:28px;width:48px;height:48px;background:var(--teal-bg);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.agent-detail-card.gold .ad-icon{background:var(--gold-bg)}
+.ad-name{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--ink)}
+.ad-role{font-size:12px;color:var(--muted);margin-top:2px}
+.ad-desc{font-size:13.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px}
+.ad-features{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
+.ad-feat{display:flex;gap:12px;align-items:flex-start}
+.ad-feat-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+.ad-feat b{font-size:13.5px;color:var(--ink);display:block;margin-bottom:3px}
+.ad-feat p{font-size:12.5px;color:var(--muted);line-height:1.45;margin:0}
+.ad-example{background:var(--bg);border-left:3px solid var(--teal);border-radius:0 8px 8px 0;padding:12px 14px;font-size:12.5px}
+.ad-example.gold-ex{border-left-color:var(--accent)}
+.ad-ex-title{font-weight:700;font-size:12px;color:var(--muted);margin-bottom:5px}
+.ad-ex-text{color:var(--ink-soft);line-height:1.5}
+
+/* ---- ISHLARIM INTEGRATSIYA ---- */
+.cases-integration{display:flex;gap:16px;align-items:flex-start;background:linear-gradient(135deg,var(--teal-bg),#f0fdf4);border:1.5px solid var(--teal);border-radius:16px;padding:20px 22px;max-width:900px;margin:0 auto 28px;text-align:left}
+.ci-icon{font-size:32px;flex-shrink:0}
+.ci-title{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--teal-dark);margin-bottom:6px}
+.ci-desc{font-size:13px;color:var(--ink-soft);line-height:1.6}
+
+/* ---- QANDAY ISHLAYDI ---- */
+.how-it-works-section{max-width:900px;margin:0 auto 32px;text-align:center}
+.how-it-works-section h2{font-family:var(--font-display);font-size:22px;color:var(--ink);margin-bottom:20px}
+.hiw-steps{display:flex;align-items:flex-start;justify-content:center;gap:8px;flex-wrap:wrap}
+.hiw-step{flex:1;min-width:140px;max-width:180px;text-align:center}
+.hiw-num{width:40px;height:40px;border-radius:50%;background:var(--teal);color:#fff;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.hiw-text b{font-size:13.5px;color:var(--ink);display:block;margin-bottom:4px}
+.hiw-text p{font-size:12px;color:var(--muted);line-height:1.4;margin:0}
+.hiw-arrow{font-size:22px;color:var(--line);padding-top:10px;align-self:flex-start}
+@media(max-width:600px){.hiw-arrow{display:none}.hiw-steps{gap:16px}}
+
+/* ---- PAYWALL ---- */
+.paywall{text-align:center;padding:38px 20px 10px}
+.paywall .shield{font-size:44px}
+.paywall h1{font-family:var(--font-display);font-size:32px;color:var(--ink);margin:12px 0 8px}
+.paywall .sub{color:var(--muted);font-size:15px;max-width:600px;margin:0 auto 30px;line-height:1.6}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:760px;margin:0 auto 22px;text-align:left}
+@media(max-width:640px){.plans{grid-template-columns:1fr}}
+.plan{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:24px;position:relative}
+.plan.b2b{border-color:var(--accent)}
+.plan .p-tag{position:absolute;top:-11px;left:22px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 12px;border-radius:12px}
+.plan h3{font-family:var(--font-display);font-size:20px;color:var(--ink)}
+.plan .price{font-family:var(--font-display);font-size:29px;color:var(--teal-dark);margin:9px 0 3px}
+.plan .price span{font-size:13px;font-family:var(--font-body);color:var(--muted);font-weight:400}
+.plan ul{list-style:none;margin:15px 0 20px}
+.plan li{font-size:13.5px;color:var(--ink-soft);padding:5px 0 5px 24px;position:relative;line-height:1.45}
+.plan li::before{content:'✓';position:absolute;left:2px;color:var(--green);font-weight:700}
+.plan .btn{width:100%}
+.test-note{font-size:12px;color:var(--muted);max-width:520px;margin:0 auto;background:var(--gold-bg);border:1px solid #ecd9b0;border-radius:8px;padding:9px 14px}
+
+/* ---- MODAL ---- */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(14,26,43,.55);z-index:50;align-items:center;justify-content:center;padding:18px}
+.modal-bg.open{display:flex}
+.modal{background:var(--card);border-radius:16px;max-width:560px;width:100%;max-height:88vh;overflow-y:auto;padding:28px}
+.modal h2{font-family:var(--font-display);font-size:22px;color:var(--ink);margin-bottom:6px}
+.modal .m-sub{color:var(--muted);font-size:13.5px;margin-bottom:18px}
+.step{display:flex;gap:13px;margin-bottom:15px}
+.step .n{flex:0 0 30px;height:30px;border-radius:50%;background:var(--teal-bg);color:var(--teal-dark);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+.step .s-t{font-weight:600;font-size:14px;color:var(--ink)}
+.step .s-d{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.5}
+.modal .foot{display:flex;justify-content:flex-end;margin-top:20px}
+
+/* ---- TOAST ---- */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;border-radius:10px;padding:12px 20px;font-size:13.5px;opacity:0;transition:all .3s;z-index:99;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.hidden{display:none!important}
+.center-note{text-align:center;padding:60px 20px;color:var(--muted)}
+.center-note a{font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">⚖️ Yurist AI <span class="pro-badge">PRO</span></div>
+  <div class="actions">
+    <a class="back" href="/" data-i18n="back_to_app">‹ Ilovaga qaytish</a>
+    <select id="langSel" aria-label="Language">
+      <option value="uz">🇺🇿 O'zbek</option><option value="ru">🇷🇺 Русский</option>
+      <option value="en">🇬🇧 English</option><option value="kk">🇰🇿 Қазақша</option>
+      <option value="ky">🇰🇬 Кыргызча</option><option value="tg">🇹🇯 Тоҷикӣ</option>
+      <option value="tk">🇹🇲 Türkmen</option><option value="az">🇦🇿 Azərbaycan</option>
+    </select>
+    <button class="help-btn" id="helpBtn" title="Instruksiya">?</button>
+  </div>
+</div>
+
+<!-- HOLAT 1: LOGIN KERAK -->
+<div id="viewLogin" class="center-note hidden">
+  <div style="font-size:40px">🔐</div>
+  <h2 style="font-family:var(--font-display);color:var(--ink);margin:12px 0 8px" data-i18n="login_required">Avval tizimga kiring</h2>
+  <p data-i18n="login_required_sub">Yurist AI Pro panelidan foydalanish uchun asosiy ilovada hisobingizga kiring.</p>
+  <p style="margin-top:16px"><a href="/" class="btn btn-primary" style="display:inline-block" data-i18n="go_login">Kirish sahifasiga o'tish</a></p>
+</div>
+
+<!-- HOLAT 2: PAYWALL (Pro emas) -->
+<div id="viewPaywall" class="wrap hidden">
+  <div class="paywall">
+
+    <!-- HERO -->
+    <div class="shield">🛡️</div>
+    <h1 data-i18n="pw_title">Biznesingizning immunitet tizimi</h1>
+    <p class="sub" data-i18n="pw_sub">Ikkita AI agent siz uxlayotganingizda ham ishlaydi: qonun o'zgarishlari, shartnoma muddatlari, soliq sanalari, xodim va litsenziya xavflari — hammasi avtomatik kuzatiladi va xavf topilishi bilan sizga xabar beriladi.</p>
+
+    <!-- 2 AGENT HAQIDA TO'LIQ MA'LUMOT -->
+    <div class="agents-detail">
+
+      <!-- AGENT 1 -->
+      <div class="agent-detail-card">
+        <div class="ad-header">
+          <div class="ad-icon">🔍</div>
+          <div>
+            <div class="ad-name">Kuzatuvchi Agent</div>
+            <div class="ad-role">Tashqi xavflar monitoringi</div>
+          </div>
+        </div>
+        <p class="ad-desc">Har kuni bir marta lex.uz va boshqa rasmiy manbalarni skanerlaydi. Biznesingizga tegishli qonunchilik o'zgarishlari, shartnoma muddatlari va sud reeyestridagi harakatlarni kuzatib, xavf topilsa darhol xabar beradi.</p>
+        <div class="ad-features">
+          <div class="ad-feat">
+            <span class="ad-feat-icon">📋</span>
+            <div>
+              <b>Shartnoma muddatlari</b>
+              <p>Ijara, pudrat, ta'minot shartnomalari muddati tugashidan 30, 14 va 7 kun oldin ogohlantiradi. Hech qachon muddat o'tkazib yubormaydisiz.</p>
+            </div>
+          </div>
+          <div class="ad-feat">
+            <span class="ad-feat-icon">⚖️</span>
+            <div>
+              <b>Qonunchilik o'zgarishlari</b>
+              <p>Mehnat, soliq, litsenziya va faoliyat sohasiga oid yangi qonunlar, qarорlar va o'zgarishlar haqida birinchi bo'lib xabar olasiz.</p>
+            </div>
+          </div>
+          <div class="ad-feat">
+            <span class="ad-feat-icon">🏛️</span>
+            <div>
+              <b>Sud reyestri kuzatuvi</b>
+              <p>Kompaniyangiz yoki sheriklaringiz nomi sud reyestrida paydo bo'lsa — darhol xabar keladi. Da'vo yoki ijro hujjatlari haqida o'z vaqtida bilasiz.</p>
+            </div>
+          </div>
+          <div class="ad-feat">
+            <span class="ad-feat-icon">🗂️</span>
+            <div>
+              <b>"Ishlarim" bilan integratsiya</b>
+              <p>Topilgan har bir ogohlantirish avtomatik ravishda "Ishlarim" bo'limidagi tegishli huquqiy ishingizga yoziladi. Barcha tarix bir joyda saqlanadi.</p>
+            </div>
+          </div>
+        </div>
+        <div class="ad-example">
+          <div class="ad-ex-title">📌 Real misol:</div>
+          <div class="ad-ex-text">"Bahor MChJ" ijara shartnomasi 12 dekabrda tugaydi. Agent 30 nоyabrda ogohlantiradi: <b>"⚠️ Ijara shartnomasi 12 kun qoldi — uzaytirish yoki yangi joy topish haqida qaror qiling."</b> Telegram'ga keladi.</div>
+        </div>
+      </div>
+
+      <!-- AGENT 2 -->
+      <div class="agent-detail-card gold">
+        <div class="ad-header">
+          <div class="ad-icon">💼</div>
+          <div>
+            <div class="ad-name">Biznes Salomatligi Agenti</div>
+            <div class="ad-role">Ichki xavflar va moliyaviy barqarorlik</div>
+          </div>
+        </div>
+        <p class="ad-desc">Biznesingiz ichidagi yuridik va moliyaviy xavflarni kuzatadi. Soliq muddatlari, xodim shartnomalari, litsenziyalar va sheriklar holati — hammasini tahlil qilib, muammo bo'lishidan oldin ogohlantiradi.</p>
+        <div class="ad-features">
+          <div class="ad-feat">
+            <span class="ad-feat-icon">🧾</span>
+            <div>
+              <b>Soliq taqvimi va muddatlar</b>
+              <p>QQS (12% yoki 6%), ijtimoiy soliq, daromad solig'i — hisobot va to'lov muddatlari har oyda avtomatik tekshiriladi. Jarima va penalardan xalos bo'lasiz.</p>
+            </div>
+          </div>
+          <div class="ad-feat">
+            <span class="ad-feat-icon">👷</span>
+            <div>
+              <b>Xodimlar va mehnat shartnomalari</b>
+              <p>Muddatli mehnat shartnomalari tugashidan oldin ogohlantiradi. Shartnomasi yo'q xodimlar aniqlanadi — mehnat inspeksiyasi jarimalari xavfi oldi olinadi.</p>
+            </div>
+          </div>
+          <div class="ad-feat">
+            <span class="ad-feat-icon">📜</span>
+            <div>
+              <b>Litsenziya va ruxsatnomalar</b>
+              <p>Faoliyat litsenziyangiz, sanitariya xulosangiz, yong'in xavfsizligi sertifikatingiz muddati tugashidan oldin eslatma keladi. Litsenziyasiz ishlash xavfiga chek qo'yiladi.</p>
+            </div>
+          </div>
+          <div class="ad-feat">
+            <span class="ad-feat-icon">🤝</span>
+            <div>
+              <b>Kontragent (sherik) kuzatuvi</b>
+              <p>Shartnoma tuzadigan kompaniyalaringizning yuridik holati kuzatiladi — bankrotlik, faoliyat to'xtatilishi yoki muammo belgilari aniqlanadi.</p>
+            </div>
+          </div>
+        </div>
+        <div class="ad-example gold-ex">
+          <div class="ad-ex-title">📌 Real misol:</div>
+          <div class="ad-ex-text">Agent soliq taqvimini tekshirib: <b>"🔴 QQS hisoboti 20-iyulgacha topshirilishi kerak — 3 kun qoldi. Hozircha topshirilmagan."</b> Telegram'ga keladi. Siz o'z vaqtida topshirasiz, 5-15% jarima oldini olasiz.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISHLARIM INTEGRATSIYASI -->
+    <div class="cases-integration">
+      <div class="ci-icon">🗂️</div>
+      <div>
+        <div class="ci-title">"Ishlarim" bilan to'liq integratsiya</div>
+        <div class="ci-desc">Pro Agent topgan har bir ogohlantirish avtomatik ravishda "Ishlarim" bo'limidagi tegishli huquqiy ishingizga yozib qo'yiladi. Masalan: "ABC kompaniya ijara shartnomasi" degan ish yaratgan bo'lsangiz — agent muddati yaqinlashganda shu ishga eslatma qo'shadi. Barcha tarix, ogohlantirishlar va maslahatlar bir joyda saqlanadi.</div>
+      </div>
+    </div>
+
+    <!-- QANDAY ISHLAYDI -->
+    <div class="how-it-works-section">
+      <h2>Qanday ishlaydi?</h2>
+      <div class="hiw-steps">
+        <div class="hiw-step">
+          <div class="hiw-num">1</div>
+          <div class="hiw-text">
+            <b>Profilni to'ldiring</b>
+            <p>Biznes nomi, soliq rejimi, shartnomalar, xodimlar, litsenziyalar — bir marta kiritasiz.</p>
+          </div>
+        </div>
+        <div class="hiw-arrow">→</div>
+        <div class="hiw-step">
+          <div class="hiw-num">2</div>
+          <div class="hiw-text">
+            <b>Xabar kanali</b>
+            <p>Telegram, Email yoki panel — ogohlantirishlar siz tanlagan kanalga keladi.</p>
+          </div>
+        </div>
+        <div class="hiw-arrow">→</div>
+        <div class="hiw-step">
+          <div class="hiw-num">3</div>
+          <div class="hiw-text">
+            <b>Agentlar ishlaydi</b>
+            <p>Har kuni avtomatik. Siz uxlayotganingizda ham kuzatuv to'xtamaydi.</p>
+          </div>
+        </div>
+        <div class="hiw-arrow">→</div>
+        <div class="hiw-step">
+          <div class="hiw-num">4</div>
+          <div class="hiw-text">
+            <b>Xavf — xabar</b>
+            <p>🔴 Kritik, 🟡 Ogohlantirish, 🔵 Ma'lumot. Har birida nima qilish kerakligi yozilgan.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARIFLAR -->
+    <div class="plans">
+      <div class="plan">
+        <h3 data-i18n="plan_b2c">Shaxsiy (B2C)</h3>
+        <div class="price">49 000 <span data-i18n="per_month">so'm / oy</span></div>
+        <ul>
+          <li>✅ Kuzatuvchi Agent (tashqi xavflar)</li>
+          <li>✅ 10 tagacha shartnoma muddati</li>
+          <li>✅ Sud reyestri kuzatuvi</li>
+          <li>✅ Telegram/Email ogohlantirishlar</li>
+          <li>✅ "Ishlarim" bilan integratsiya</li>
+          <li>✅ Har kuni avtomatik tekshiruv</li>
+        </ul>
+        <button class="btn btn-primary" onclick="subscribe('b2c')" data-i18n="btn_activate">Faollashtirish</button>
+      </div>
+      <div class="plan b2b">
+        <div class="p-tag" data-i18n="tag_business">BIZNES UCHUN</div>
+        <h3 data-i18n="plan_b2b">Biznes (B2B)</h3>
+        <div class="price">299 000 <span data-i18n="per_month">so'm / oy</span></div>
+        <ul>
+          <li>✅ Ikkala agent: Kuzatuvchi + Biznes Salomatligi</li>
+          <li>✅ Soliq taqvimi (QQS 12%/6%, ijtimoiy soliq)</li>
+          <li>✅ Xodimlar va litsenziyalar monitoringi</li>
+          <li>✅ Kontragent kuzatuvi</li>
+          <li>✅ Cheksiz shartnoma va xodim</li>
+          <li>✅ "Ishlarim" — barcha tarix bir joyda</li>
+          <li>✅ Har kuni avtomatik + qo'lda tekshirish</li>
+        </ul>
+        <button class="btn btn-gold" onclick="subscribe('b2b')" data-i18n="btn_activate2">Faollashtirish</button>
+      </div>
+    </div>
+
+    <div class="test-note" data-i18n="test_note">💡 Test rejimi: to'lov integratsiyasi (Payme/Click) tez orada qo'shiladi — hozircha tarif darhol, to'lovsiz faollashadi.</div>
+  </div>
+</div>
+
+<!-- HOLAT 3: PRO PANEL -->
+<div id="viewPanel" class="wrap hidden">
+  <div class="hero">
+    <div>
+      <h1 data-i18n="panel_title">Agentlar paneli</h1>
+      <p data-i18n="panel_sub">Ikkala agent biznesingizni tashqaridan va ichkaridan qo'riqlaydi. Profil qanchalik to'liq bo'lsa, himoya shunchalik aniq ishlaydi.</p>
+    </div>
+    <div class="days-left"><span data-i18n="days_left">Obuna:</span> <b id="daysLeft">—</b> <span data-i18n="days_word">kun</span></div>
+  </div>
+
+  <div class="agents">
+    <div class="agent-card">
+      <h3><span class="dot"></span><span data-i18n="agent1_name">Kuzatuvchi Agent</span></h3>
+      <div class="desc" data-i18n="agent1_desc">Tashqi xavflar: qonunchilik o'zgarishlari (lex.uz), shartnoma muddatlari, sud reyestri kuzatuvi.</div>
+      <div class="last-run"><span data-i18n="last_run">Oxirgi tekshiruv:</span> <b id="watcherLast">—</b></div>
+    </div>
+    <div class="agent-card health">
+      <h3><span class="dot" style="background:var(--accent)"></span><span data-i18n="agent2_name">Biznes Salomatligi Agenti</span></h3>
+      <div class="desc" data-i18n="agent2_desc">Ichki xavflar: soliq muddatlari, xodim shartnomalari, litsenziyalar, kontragent tekshiruvi.</div>
+      <div class="last-run"><span data-i18n="last_run2">Oxirgi tekshiruv:</span> <b id="healthLast">—</b></div>
+    </div>
+  </div>
+
+  <div class="run-strip" id="runStrip">
+    <button class="btn btn-primary" id="runAllBtn" onclick="runAll()" data-i18n="btn_run">🔍 Hozir tekshirish</button>
+    <div class="spinner"></div>
+    <span id="runResult" style="font-size:13px;color:var(--muted)"></span>
+  </div>
+
+  <!-- OGOHLANTIRISHLAR -->
+  <div class="section">
+    <div class="section-head">
+      <h2 data-i18n="alerts_title">Ogohlantirishlar</h2>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="badge hidden" id="unreadBadge">0</span>
+        <button class="btn btn-ghost" style="padding:7px 13px;font-size:12.5px" onclick="markRead()" data-i18n="btn_mark_read">Hammasini o'qildi</button>
+      </div>
+    </div>
+    <div class="section-body" id="alertsList">
+      <div class="empty-note" data-i18n="alerts_empty">Hozircha ogohlantirish yo'q. Profilni to'ldirib, «Hozir tekshirish» tugmasini bosing.</div>
+    </div>
+  </div>
+
+  <!-- KUZATUV PROFILI -->
+  <div class="section">
+    <div class="section-head"><h2 data-i18n="profile_title">Kuzatuv profili</h2></div>
+    <div class="section-body">
+
+      <h4 class="group-title" data-i18n="g_business">Biznes ma'lumotlari</h4>
+      <div class="grid2">
+        <div class="field"><label data-i18n="l_bizname">Biznes nomi</label><input id="fBizName" placeholder="Bahor MChJ"></div>
+        <div class="field"><label data-i18n="l_biztype">Faoliyat turi</label><input id="fBizType" placeholder="savdo / xizmat / ishlab chiqarish"></div>
+        <div class="field"><label data-i18n="l_inn">STIR (INN)</label><input id="fInn" placeholder="123456789"></div>
+        <div class="field"><label data-i18n="l_regime">Soliq rejimi</label>
+          <select id="fRegime">
+            <option value="">—</option>
+            <option value="qqs_12" data-i18n="r_qqs12">QQS 12% + foyda solig'i</option>
+            <option value="qqs_6" data-i18n="r_qqs6">QQS 6% (yangi soddalashtirilgan)</option>
+            <option value="simplified" data-i18n="r_simpl">Aylanma soliq (soddalashtirilgan)</option>
+            <option value="individual" data-i18n="r_ind">Yakka tartibdagi tadbirkor</option>
+          </select>
+        </div>
+      </div>
+
+      <h4 class="group-title" data-i18n="g_topics">Kuzatiladigan qonunchilik sohalari</h4>
+      <div class="chips" id="topicChips"></div>
+
+      <h4 class="group-title" data-i18n="g_contracts">Shartnomalar (muddat kuzatuvi)</h4>
+      <div class="sub-list" id="contractsList"></div>
+      <button class="add-row" onclick="addContract()" data-i18n="btn_add_contract">+ Shartnoma qo'shish</button>
+
+      <h4 class="group-title" data-i18n="g_employees">Xodimlar</h4>
+      <div class="sub-list" id="employeesList"></div>
+      <button class="add-row" onclick="addEmployee()" data-i18n="btn_add_emp">+ Xodim qo'shish</button>
+
+      <h4 class="group-title" data-i18n="g_licenses">Litsenziya va ruxsatnomalar</h4>
+      <div class="sub-list" id="licensesList"></div>
+      <button class="add-row" onclick="addLicense()" data-i18n="btn_add_lic">+ Litsenziya qo'shish</button>
+
+      <h4 class="group-title" data-i18n="g_watch">Sud reyestri va sheriklar kuzatuvi</h4>
+      <div class="grid2">
+        <div class="field">
+          <label data-i18n="l_court">Sud kuzatuvi (nomlar, vergul bilan)</label>
+          <input id="fCourtNames" placeholder="Bahor MChJ, Karimov Jasur">
+          <div class="hint" data-i18n="h_court">Kompaniya yoki shaxs nomlari — sudda ish ochilsa xabar beramiz</div>
+        </div>
+        <div class="field">
+          <label data-i18n="l_partners">Sheriklar (vergul bilan)</label>
+          <input id="fPartners" placeholder="Hamkor MChJ, Logistika Plus">
+          <div class="hint" data-i18n="h_partners">Shartnoma tuzadigan kompaniyalar — xavf kuzatuvi</div>
+        </div>
+      </div>
+
+      <h4 class="group-title" data-i18n="g_notify">Xabar kanali</h4>
+      <div class="grid2">
+        <div class="field">
+          <label data-i18n="l_channel">Ogohlantirishlar qayerga kelsin?</label>
+          <select id="fChannel">
+            <option value="inapp" data-i18n="ch_inapp">Faqat panelda</option>
+            <option value="telegram">Telegram</option>
+            <option value="email">Email</option>
+            <option value="sms">SMS</option>
+          </select>
+        </div>
+        <div class="field" id="tgField" style="display:none">
+          <label data-i18n="l_tgchat">Telegram chat ID</label>
+          <input id="fTgChat" placeholder="123456789">
+          <div class="hint" data-i18n="h_tgchat">@userinfobot ga yozing — u chat ID raqamingizni beradi</div>
+        </div>
+      </div>
+
+      <div class="form-foot">
+        <button class="btn btn-primary" onclick="saveProfile()" data-i18n="btn_save">Profilni saqlash</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:8px">
+    <button class="btn btn-danger" style="font-size:12.5px;padding:8px 16px" onclick="cancelSub()" data-i18n="btn_cancel_sub">Obunani bekor qilish</button>
+  </div>
+</div>
+
+<!-- INSTRUKSIYA MODALI -->
+<div class="modal-bg" id="howModal">
+  <div class="modal">
+    <h2 data-i18n="how_title">Yurist AI Pro qanday ishlaydi?</h2>
+    <p class="m-sub" data-i18n="how_sub">3 daqiqada sozlang — keyin agentlar o'zi ishlaydi.</p>
+    <div class="step"><div class="n">1</div><div><div class="s-t" data-i18n="s1_t">Kuzatuv profilini to'ldiring</div><div class="s-d" data-i18n="s1_d">Biznes nomi, soliq rejimi, shartnomalar, xodimlar, litsenziyalar — bir marta kiritасiz, agentlar shu ma'lumot asosida ishlaydi.</div></div></div>
+    <div class="step"><div class="n">2</div><div><div class="s-t" data-i18n="s2_t">Xabar kanalini tanlang</div><div class="s-d" data-i18n="s2_d">Ogohlantirishlar panelga, Telegram'ga, email yoki SMS'ga kelishi mumkin. Telegram uchun chat ID kiriting.</div></div></div>
+    <div class="step"><div class="n">3</div><div><div class="s-t" data-i18n="s3_t">Agentlar avtomatik ishlaydi</div><div class="s-d" data-i18n="s3_d">Har kuni bir marta ikkala agent barcha xavflarni tekshiradi: shartnoma muddati, soliq sanasi, qonun o'zgarishi, xodim va litsenziya muammolari. Xohlasangiz «Hozir tekshirish» bilan qo'lda ham ishga tushira olasiz.</div></div></div>
+    <div class="step"><div class="n">4</div><div><div class="s-t" data-i18n="s4_t">Xavf topilsa — darhol xabar</div><div class="s-d" data-i18n="s4_d">🔴 Kritik (7 kundan kam qoldi yoki muddat o'tgan), 🟡 Ogohlantirish (14 kungacha), 🔵 Ma'lumot. Har bir ogohlantirishda nima qilish kerakligi yozilgan bo'ladi.</div></div></div>
+    <div class="foot"><button class="btn btn-primary" onclick="closeHow()" data-i18n="btn_understood">Tushunarli!</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================= 8 TILLI TARJIMALAR ================= */
+const PRO_I18N = {
+uz:{back_to_app:"‹ Ilovaga qaytish",login_required:"Avval tizimga kiring",login_required_sub:"Yurist AI Pro panelidan foydalanish uchun asosiy ilovada hisobingizga kiring.",go_login:"Kirish sahifasiga o'tish",pw_title:"Biznesingizning immunitet tizimi",pw_sub:"Ikkita AI agent siz uxlayotganingizda ham ishlaydi: qonun o'zgarishlari, shartnoma muddatlari, soliq sanalari, xodim va litsenziya xavflari — hammasi avtomatik kuzatiladi va xavf topilishi bilan sizga xabar beriladi.",plan_b2c:"Shaxsiy (B2C)",plan_b2b:"Biznes (B2B)",per_month:"so'm / oy",tag_business:"BIZNES UCHUN",f_watcher:"Kuzatuvchi Agent — qonun, shartnoma, sud monitoringi",f_contracts:"10 tagacha shartnoma muddati kuzatuvi",f_alerts:"Panel + Telegram/Email ogohlantirishlar",f_daily:"Har kuni avtomatik tekshiruv",f_both:"Ikkala agent: Kuzatuvchi + Biznes Salomatligi",f_tax:"Soliq taqvimi (QQS 12%/6%, ijtimoiy soliq)",f_emp:"Xodimlar va litsenziyalar xavf monitoringi",f_partner:"Kontragent (sherik) kuzatuvi",f_unlimited:"Cheksiz shartnoma va xodim",btn_activate:"Faollashtirish",btn_activate2:"Faollashtirish",test_note:"💡 Test rejimi: to'lov integratsiyasi (Payme/Click) tez orada qo'shiladi — hozircha tarif darhol, to'lovsiz faollashadi.",panel_title:"Agentlar paneli",panel_sub:"Ikkala agent biznesingizni tashqaridan va ichkaridan qo'riqlaydi. Profil qanchalik to'liq bo'lsa, himoya shunchalik aniq ishlaydi.",days_left:"Obuna:",days_word:"kun",agent1_name:"Kuzatuvchi Agent",agent1_desc:"Tashqi xavflar: qonunchilik o'zgarishlari (lex.uz), shartnoma muddatlari, sud reyestri kuzatuvi.",agent2_name:"Biznes Salomatligi Agenti",agent2_desc:"Ichki xavflar: soliq muddatlari, xodim shartnomalari, litsenziyalar, kontragent tekshiruvi.",last_run:"Oxirgi tekshiruv:",last_run2:"Oxirgi tekshiruv:",never_run:"hali ishlamagan",btn_run:"🔍 Hozir tekshirish",run_done:(n)=>`Tekshiruv tugadi: ${n} ta ogohlantirish topildi`,alerts_title:"Ogohlantirishlar",btn_mark_read:"Hammasini o'qildi",alerts_empty:"Hozircha ogohlantirish yo'q. Profilni to'ldirib, «Hozir tekshirish» tugmasini bosing.",profile_title:"Kuzatuv profili",g_business:"Biznes ma'lumotlari",l_bizname:"Biznes nomi",l_biztype:"Faoliyat turi",l_inn:"STIR (INN)",l_regime:"Soliq rejimi",r_qqs12:"QQS 12% + foyda solig'i",r_qqs6:"QQS 6% (yangi soddalashtirilgan)",r_simpl:"Aylanma soliq (soddalashtirilgan)",r_ind:"Yakka tartibdagi tadbirkor",g_topics:"Kuzatiladigan qonunchilik sohalari",g_contracts:"Shartnomalar (muddat kuzatuvi)",btn_add_contract:"+ Shartnoma qo'shish",g_employees:"Xodimlar",btn_add_emp:"+ Xodim qo'shish",g_licenses:"Litsenziya va ruxsatnomalar",btn_add_lic:"+ Litsenziya qo'shish",g_watch:"Sud reyestri va sheriklar kuzatuvi",l_court:"Sud kuzatuvi (nomlar, vergul bilan)",h_court:"Kompaniya yoki shaxs nomlari — sudda ish ochilsa xabar beramiz",l_partners:"Sheriklar (vergul bilan)",h_partners:"Shartnoma tuzadigan kompaniyalar — xavf kuzatuvi",g_notify:"Xabar kanali",l_channel:"Ogohlantirishlar qayerga kelsin?",ch_inapp:"Faqat panelda",l_tgchat:"Telegram chat ID",h_tgchat:"@userinfobot ga yozing — u chat ID raqamingizni beradi",btn_save:"Profilni saqlash",saved:"Profil saqlandi ✅",btn_cancel_sub:"Obunani bekor qilish",cancel_confirm:"Obunani bekor qilasizmi? Muddati tugaguncha foydalana olasiz.",cancelled:"Obuna bekor qilindi",how_title:"Yurist AI Pro qanday ishlaydi?",how_sub:"3 daqiqada sozlang — keyin agentlar o'zi ishlaydi.",s1_t:"Kuzatuv profilini to'ldiring",s1_d:"Biznes nomi, soliq rejimi, shartnomalar, xodimlar, litsenziyalar — bir marta kiritasiz, agentlar shu ma'lumot asosida ishlaydi.",s2_t:"Xabar kanalini tanlang",s2_d:"Ogohlantirishlar panelga, Telegram'ga, email yoki SMS'ga kelishi mumkin. Telegram uchun chat ID kiriting.",s3_t:"Agentlar avtomatik ishlaydi",s3_d:"Har kuni bir marta ikkala agent barcha xavflarni tekshiradi: shartnoma muddati, soliq sanasi, qonun o'zgarishi, xodim va litsenziya muammolari. Xohlasangiz «Hozir tekshirish» bilan qo'lda ham ishga tushira olasiz.",s4_t:"Xavf topilsa — darhol xabar",s4_d:"🔴 Kritik (7 kundan kam qoldi yoki muddat o'tgan), 🟡 Ogohlantirish (14 kungacha), 🔵 Ma'lumot. Har bir ogohlantirishda nima qilish kerakligi yozilgan bo'ladi.",btn_understood:"Tushunarli!",activated:"Yurist AI Pro faollashtirildi! 🎉",err:"Xatolik yuz berdi",c_title:"Shartnoma nomi",c_party:"Hamkor",c_date:"Tugash sanasi",e_name:"Ism familiya",e_pos:"Lavozim",e_type:"Shartnoma turi",e_fixed:"Muddatli",e_indef:"Muddatsiz",e_nocontract:"Shartnoma yo'q!",l_name:"Litsenziya nomi",l_org:"Bergan organ",l_date:"Tugash sanasi",t_mehnat:"Mehnat",t_soliq:"Soliq",t_litsenziya:"Litsenziya",t_ijara:"Ijara",t_import:"Import/Eksport",t_reklama:"Reklama"},
+ru:{back_to_app:"‹ Вернуться в приложение",login_required:"Сначала войдите в систему",login_required_sub:"Чтобы пользоваться панелью Yurist AI Pro, войдите в аккаунт в основном приложении.",go_login:"Перейти ко входу",pw_title:"Иммунная система вашего бизнеса",pw_sub:"Два AI-агента работают, даже когда вы спите: изменения законов, сроки договоров, налоговые даты, риски по сотрудникам и лицензиям — всё отслеживается автоматически, и при обнаружении риска вы сразу получаете уведомление.",plan_b2c:"Личный (B2C)",plan_b2b:"Бизнес (B2B)",per_month:"сум / мес",tag_business:"ДЛЯ БИЗНЕСА",f_watcher:"Агент-Наблюдатель — мониторинг законов, договоров, судов",f_contracts:"Отслеживание сроков до 10 договоров",f_alerts:"Панель + уведомления Telegram/Email",f_daily:"Ежедневная автоматическая проверка",f_both:"Оба агента: Наблюдатель + Здоровье Бизнеса",f_tax:"Налоговый календарь (НДС 12%/6%, соцналог)",f_emp:"Мониторинг рисков по сотрудникам и лицензиям",f_partner:"Мониторинг контрагентов",f_unlimited:"Безлимит договоров и сотрудников",btn_activate:"Активировать",btn_activate2:"Активировать",test_note:"💡 Тестовый режим: платёжная интеграция (Payme/Click) скоро будет добавлена — пока тариф активируется сразу, без оплаты.",panel_title:"Панель агентов",panel_sub:"Оба агента охраняют ваш бизнес снаружи и изнутри. Чем полнее профиль, тем точнее работает защита.",days_left:"Подписка:",days_word:"дн.",agent1_name:"Агент-Наблюдатель",agent1_desc:"Внешние риски: изменения законодательства (lex.uz), сроки договоров, мониторинг судебного реестра.",agent2_name:"Агент Здоровья Бизнеса",agent2_desc:"Внутренние риски: налоговые сроки, трудовые договоры, лицензии, проверка контрагентов.",last_run:"Последняя проверка:",last_run2:"Последняя проверка:",never_run:"ещё не запускался",btn_run:"🔍 Проверить сейчас",run_done:(n)=>`Проверка завершена: найдено ${n} предупреждений`,alerts_title:"Предупреждения",btn_mark_read:"Отметить прочитанными",alerts_empty:"Пока нет предупреждений. Заполните профиль и нажмите «Проверить сейчас».",profile_title:"Профиль мониторинга",g_business:"Данные бизнеса",l_bizname:"Название бизнеса",l_biztype:"Вид деятельности",l_inn:"ИНН",l_regime:"Налоговый режим",r_qqs12:"НДС 12% + налог на прибыль",r_qqs6:"НДС 6% (новый упрощённый)",r_simpl:"Налог с оборота (упрощённый)",r_ind:"Индивидуальный предприниматель",g_topics:"Отслеживаемые области законодательства",g_contracts:"Договоры (контроль сроков)",btn_add_contract:"+ Добавить договор",g_employees:"Сотрудники",btn_add_emp:"+ Добавить сотрудника",g_licenses:"Лицензии и разрешения",btn_add_lic:"+ Добавить лицензию",g_watch:"Мониторинг судов и контрагентов",l_court:"Судебный мониторинг (имена, через запятую)",h_court:"Названия компаний или ФИО — сообщим при открытии дела",l_partners:"Контрагенты (через запятую)",h_partners:"Компании-партнёры по договорам — мониторинг рисков",g_notify:"Канал уведомлений",l_channel:"Куда присылать предупреждения?",ch_inapp:"Только в панели",l_tgchat:"Telegram chat ID",h_tgchat:"Напишите @userinfobot — он покажет ваш chat ID",btn_save:"Сохранить профиль",saved:"Профиль сохранён ✅",btn_cancel_sub:"Отменить подписку",cancel_confirm:"Отменить подписку? Доступ сохранится до конца оплаченного срока.",cancelled:"Подписка отменена",how_title:"Как работает Yurist AI Pro?",how_sub:"Настройте за 3 минуты — дальше агенты работают сами.",s1_t:"Заполните профиль мониторинга",s1_d:"Название бизнеса, налоговый режим, договоры, сотрудники, лицензии — вводите один раз, агенты работают на основе этих данных.",s2_t:"Выберите канал уведомлений",s2_d:"Предупреждения могут приходить в панель, Telegram, на email или SMS. Для Telegram укажите chat ID.",s3_t:"Агенты работают автоматически",s3_d:"Раз в день оба агента проверяют все риски: сроки договоров, налоговые даты, изменения законов, проблемы с сотрудниками и лицензиями. Можно запустить и вручную кнопкой «Проверить сейчас».",s4_t:"Найден риск — сразу уведомление",s4_d:"🔴 Критично (меньше 7 дней или срок истёк), 🟡 Предупреждение (до 14 дней), 🔵 Информация. В каждом предупреждении написано, что делать.",btn_understood:"Понятно!",activated:"Yurist AI Pro активирован! 🎉",err:"Произошла ошибка",c_title:"Название договора",c_party:"Контрагент",c_date:"Дата окончания",e_name:"ФИО",e_pos:"Должность",e_type:"Тип договора",e_fixed:"Срочный",e_indef:"Бессрочный",e_nocontract:"Нет договора!",l_name:"Название лицензии",l_org:"Выдавший орган",l_date:"Дата окончания",t_mehnat:"Трудовое",t_soliq:"Налоги",t_litsenziya:"Лицензии",t_ijara:"Аренда",t_import:"Импорт/Экспорт",t_reklama:"Реклама"},
+en:{back_to_app:"‹ Back to app",login_required:"Please sign in first",login_required_sub:"To use the Yurist AI Pro panel, sign in to your account in the main app.",go_login:"Go to sign in",pw_title:"Your business's immune system",pw_sub:"Two AI agents work even while you sleep: law changes, contract deadlines, tax dates, employee and license risks — everything is monitored automatically, and you're notified the moment a risk is found.",plan_b2c:"Personal (B2C)",plan_b2b:"Business (B2B)",per_month:"UZS / mo",tag_business:"FOR BUSINESS",f_watcher:"Watcher Agent — law, contract, court monitoring",f_contracts:"Deadline tracking for up to 10 contracts",f_alerts:"Panel + Telegram/Email alerts",f_daily:"Automatic daily checks",f_both:"Both agents: Watcher + Business Health",f_tax:"Tax calendar (VAT 12%/6%, social tax)",f_emp:"Employee & license risk monitoring",f_partner:"Counterparty (partner) monitoring",f_unlimited:"Unlimited contracts & employees",btn_activate:"Activate",btn_activate2:"Activate",test_note:"💡 Test mode: payment integration (Payme/Click) is coming soon — for now the plan activates instantly, free of charge.",panel_title:"Agents panel",panel_sub:"Both agents guard your business from outside and inside. The more complete your profile, the more precise the protection.",days_left:"Subscription:",days_word:"days",agent1_name:"Watcher Agent",agent1_desc:"External risks: legislation changes (lex.uz), contract deadlines, court registry monitoring.",agent2_name:"Business Health Agent",agent2_desc:"Internal risks: tax deadlines, employment contracts, licenses, counterparty checks.",last_run:"Last check:",last_run2:"Last check:",never_run:"not run yet",btn_run:"🔍 Check now",run_done:(n)=>`Check complete: ${n} alerts found`,alerts_title:"Alerts",btn_mark_read:"Mark all read",alerts_empty:"No alerts yet. Fill in your profile and press \"Check now\".",profile_title:"Monitoring profile",g_business:"Business details",l_bizname:"Business name",l_biztype:"Business type",l_inn:"Tax ID (INN)",l_regime:"Tax regime",r_qqs12:"VAT 12% + profit tax",r_qqs6:"VAT 6% (new simplified)",r_simpl:"Turnover tax (simplified)",r_ind:"Individual entrepreneur",g_topics:"Watched legislation areas",g_contracts:"Contracts (deadline tracking)",btn_add_contract:"+ Add contract",g_employees:"Employees",btn_add_emp:"+ Add employee",g_licenses:"Licenses & permits",btn_add_lic:"+ Add license",g_watch:"Court & partner monitoring",l_court:"Court watch (names, comma-separated)",h_court:"Company or person names — we alert you if a case opens",l_partners:"Partners (comma-separated)",h_partners:"Companies you contract with — risk monitoring",g_notify:"Notification channel",l_channel:"Where should alerts go?",ch_inapp:"Panel only",l_tgchat:"Telegram chat ID",h_tgchat:"Message @userinfobot — it shows your chat ID",btn_save:"Save profile",saved:"Profile saved ✅",btn_cancel_sub:"Cancel subscription",cancel_confirm:"Cancel subscription? Access remains until the paid period ends.",cancelled:"Subscription cancelled",how_title:"How does Yurist AI Pro work?",how_sub:"Set up in 3 minutes — then the agents work on their own.",s1_t:"Fill in the monitoring profile",s1_d:"Business name, tax regime, contracts, employees, licenses — enter once, the agents work from this data.",s2_t:"Choose a notification channel",s2_d:"Alerts can arrive in the panel, Telegram, email or SMS. For Telegram, enter your chat ID.",s3_t:"Agents run automatically",s3_d:"Once a day both agents check every risk: contract deadlines, tax dates, law changes, employee and license issues. You can also run them manually with \"Check now\".",s4_t:"Risk found — instant alert",s4_d:"🔴 Critical (under 7 days or overdue), 🟡 Warning (up to 14 days), 🔵 Info. Every alert tells you what to do.",btn_understood:"Got it!",activated:"Yurist AI Pro activated! 🎉",err:"An error occurred",c_title:"Contract title",c_party:"Counterparty",c_date:"End date",e_name:"Full name",e_pos:"Position",e_type:"Contract type",e_fixed:"Fixed-term",e_indef:"Indefinite",e_nocontract:"No contract!",l_name:"License name",l_org:"Issuing body",l_date:"Expiry date",t_mehnat:"Labor",t_soliq:"Tax",t_litsenziya:"Licensing",t_ijara:"Rent/Lease",t_import:"Import/Export",t_reklama:"Advertising"},
+kk:{back_to_app:"‹ Қосымшаға оралу",login_required:"Алдымен жүйеге кіріңіз",login_required_sub:"Yurist AI Pro панелін пайдалану үшін негізгі қосымшада аккаунтыңызға кіріңіз.",go_login:"Кіру бетіне өту",pw_title:"Бизнесіңіздің иммундық жүйесі",pw_sub:"Екі AI агент сіз ұйықтап жатқанда да жұмыс істейді: заң өзгерістері, шарт мерзімдері, салық күндері, қызметкер және лицензия қауіптері — бәрі автоматты бақыланады және қауіп табылғанда сізге бірден хабар беріледі.",plan_b2c:"Жеке (B2C)",plan_b2b:"Бизнес (B2B)",per_month:"сум / ай",tag_business:"БИЗНЕС ҮШІН",f_watcher:"Бақылаушы Агент — заң, шарт, сот мониторингі",f_contracts:"10-ға дейін шарт мерзімін бақылау",f_alerts:"Панель + Telegram/Email ескертулер",f_daily:"Күнделікті автоматты тексеру",f_both:"Екі агент: Бақылаушы + Бизнес Денсаулығы",f_tax:"Салық күнтізбесі (ҚҚС 12%/6%, әлеуметтік салық)",f_emp:"Қызметкер және лицензия қауіп мониторингі",f_partner:"Контрагент бақылауы",f_unlimited:"Шексіз шарт пен қызметкер",btn_activate:"Белсендіру",btn_activate2:"Белсендіру",test_note:"💡 Тест режимі: төлем интеграциясы (Payme/Click) жақында қосылады — әзірге тариф бірден, төлемсіз белсендіріледі.",panel_title:"Агенттер панелі",panel_sub:"Екі агент бизнесіңізді сырттан және іштен қорғайды. Профиль неғұрлым толық болса, қорғаныс соғұрлым дәл жұмыс істейді.",days_left:"Жазылым:",days_word:"күн",agent1_name:"Бақылаушы Агент",agent1_desc:"Сыртқы қауіптер: заңнама өзгерістері (lex.uz), шарт мерзімдері, сот тізілімін бақылау.",agent2_name:"Бизнес Денсаулығы Агенті",agent2_desc:"Ішкі қауіптер: салық мерзімдері, еңбек шарттары, лицензиялар, контрагент тексеруі.",last_run:"Соңғы тексеру:",last_run2:"Соңғы тексеру:",never_run:"әлі іске қосылмаған",btn_run:"🔍 Қазір тексеру",run_done:(n)=>`Тексеру аяқталды: ${n} ескерту табылды`,alerts_title:"Ескертулер",btn_mark_read:"Барлығын оқылды деп белгілеу",alerts_empty:"Әзірге ескерту жоқ. Профильді толтырып, «Қазір тексеру» батырмасын басыңыз.",profile_title:"Бақылау профилі",g_business:"Бизнес деректері",l_bizname:"Бизнес атауы",l_biztype:"Қызмет түрі",l_inn:"СТН (ИНН)",l_regime:"Салық режимі",r_qqs12:"ҚҚС 12% + пайда салығы",r_qqs6:"ҚҚС 6% (жаңа оңайлатылған)",r_simpl:"Айналым салығы (оңайлатылған)",r_ind:"Жеке кәсіпкер",g_topics:"Бақыланатын заңнама салалары",g_contracts:"Шарттар (мерзім бақылауы)",btn_add_contract:"+ Шарт қосу",g_employees:"Қызметкерлер",btn_add_emp:"+ Қызметкер қосу",g_licenses:"Лицензиялар мен рұқсаттар",btn_add_lic:"+ Лицензия қосу",g_watch:"Сот және серіктес бақылауы",l_court:"Сот бақылауы (атаулар, үтірмен)",h_court:"Компания немесе тұлға атаулары — іс ашылса хабарлаймыз",l_partners:"Серіктестер (үтірмен)",h_partners:"Шарт жасайтын компаниялар — қауіп бақылауы",g_notify:"Хабарлама арнасы",l_channel:"Ескертулер қайда келсін?",ch_inapp:"Тек панельде",l_tgchat:"Telegram chat ID",h_tgchat:"@userinfobot-қа жазыңыз — ол chat ID нөміріңізді береді",btn_save:"Профильді сақтау",saved:"Профиль сақталды ✅",btn_cancel_sub:"Жазылымды болдырмау",cancel_confirm:"Жазылымды болдырмайсыз ба? Мерзім аяқталғанша пайдалана аласыз.",cancelled:"Жазылым болдырылмады",how_title:"Yurist AI Pro қалай жұмыс істейді?",how_sub:"3 минутта баптаңыз — кейін агенттер өздері жұмыс істейді.",s1_t:"Бақылау профилін толтырыңыз",s1_d:"Бизнес атауы, салық режимі, шарттар, қызметкерлер, лицензиялар — бір рет енгізесіз, агенттер осы деректер негізінде жұмыс істейді.",s2_t:"Хабарлама арнасын таңдаңыз",s2_d:"Ескертулер панельге, Telegram-ға, email немесе SMS-ке келуі мүмкін. Telegram үшін chat ID енгізіңіз.",s3_t:"Агенттер автоматты жұмыс істейді",s3_d:"Күніне бір рет екі агент барлық қауіптерді тексереді: шарт мерзімі, салық күні, заң өзгерісі, қызметкер және лицензия мәселелері. «Қазір тексеру» арқылы қолмен де іске қоса аласыз.",s4_t:"Қауіп табылса — дереу хабар",s4_d:"🔴 Критикалық (7 күннен аз қалды немесе мерзім өткен), 🟡 Ескерту (14 күнге дейін), 🔵 Ақпарат. Әр ескертуде не істеу керектігі жазылған.",btn_understood:"Түсінікті!",activated:"Yurist AI Pro белсендірілді! 🎉",err:"Қате орын алды",c_title:"Шарт атауы",c_party:"Контрагент",c_date:"Аяқталу күні",e_name:"Аты-жөні",e_pos:"Лауазымы",e_type:"Шарт түрі",e_fixed:"Мерзімді",e_indef:"Мерзімсіз",e_nocontract:"Шарт жоқ!",l_name:"Лицензия атауы",l_org:"Берген орган",l_date:"Аяқталу күні",t_mehnat:"Еңбек",t_soliq:"Салық",t_litsenziya:"Лицензия",t_ijara:"Жалдау",t_import:"Импорт/Экспорт",t_reklama:"Жарнама"},
+ky:{back_to_app:"‹ Тиркемеге кайтуу",login_required:"Адегенде системага кириңиз",login_required_sub:"Yurist AI Pro панелин колдонуу үчүн негизги тиркемеде аккаунтуңузга кириңиз.",go_login:"Кирүү бетине өтүү",pw_title:"Бизнесиңиздин иммундук системасы",pw_sub:"Эки AI агент сиз уктап жатканда да иштейт: мыйзам өзгөрүүлөрү, келишим мөөнөттөрү, салык даталары, кызматкер жана лицензия коркунучтары — баары автоматтык көзөмөлдөнөт жана коркунуч табылганда сизге дароо кабар берилет.",plan_b2c:"Жеке (B2C)",plan_b2b:"Бизнес (B2B)",per_month:"сум / ай",tag_business:"БИЗНЕС ҮЧҮН",f_watcher:"Байкоочу Агент — мыйзам, келишим, сот мониторинги",f_contracts:"10го чейин келишим мөөнөтүн көзөмөлдөө",f_alerts:"Панель + Telegram/Email эскертүүлөр",f_daily:"Күн сайын автоматтык текшерүү",f_both:"Эки агент: Байкоочу + Бизнес Ден соолугу",f_tax:"Салык календары (КНС 12%/6%, социалдык салык)",f_emp:"Кызматкер жана лицензия коркунуч мониторинги",f_partner:"Контрагент көзөмөлү",f_unlimited:"Чексиз келишим жана кызматкер",btn_activate:"Активдештирүү",btn_activate2:"Активдештирүү",test_note:"💡 Тест режими: төлөм интеграциясы (Payme/Click) жакында кошулат — азырынча тариф дароо, төлөмсүз активдешет.",panel_title:"Агенттер панели",panel_sub:"Эки агент бизнесиңизди сырттан жана ичтен коргойт. Профиль канчалык толук болсо, коргоо ошончолук так иштейт.",days_left:"Жазылуу:",days_word:"күн",agent1_name:"Байкоочу Агент",agent1_desc:"Тышкы коркунучтар: мыйзам өзгөрүүлөрү (lex.uz), келишим мөөнөттөрү, сот реестрин көзөмөлдөө.",agent2_name:"Бизнес Ден соолук Агенти",agent2_desc:"Ички коркунучтар: салык мөөнөттөрү, эмгек келишимдери, лицензиялар, контрагент текшерүүсү.",last_run:"Акыркы текшерүү:",last_run2:"Акыркы текшерүү:",never_run:"азырынча иштей элек",btn_run:"🔍 Азыр текшерүү",run_done:(n)=>`Текшерүү бүттү: ${n} эскертүү табылды`,alerts_title:"Эскертүүлөр",btn_mark_read:"Баарын окулду деп белгилөө",alerts_empty:"Азырынча эскертүү жок. Профилди толтуруп, «Азыр текшерүү» баскычын басыңыз.",profile_title:"Көзөмөл профили",g_business:"Бизнес маалыматтары",l_bizname:"Бизнес аталышы",l_biztype:"Иш түрү",l_inn:"ИНН",l_regime:"Салык режими",r_qqs12:"КНС 12% + пайда салыгы",r_qqs6:"КНС 6% (жаңы жөнөкөйлөтүлгөн)",r_simpl:"Жүгүртүү салыгы (жөнөкөйлөтүлгөн)",r_ind:"Жеке ишкер",g_topics:"Көзөмөлдөнүүчү мыйзам тармактары",g_contracts:"Келишимдер (мөөнөт көзөмөлү)",btn_add_contract:"+ Келишим кошуу",g_employees:"Кызматкерлер",btn_add_emp:"+ Кызматкер кошуу",g_licenses:"Лицензиялар жана уруксаттар",btn_add_lic:"+ Лицензия кошуу",g_watch:"Сот жана өнөктөш көзөмөлү",l_court:"Сот көзөмөлү (аттар, үтүр менен)",h_court:"Компания же адам аттары — иш ачылса кабарлайбыз",l_partners:"Өнөктөштөр (үтүр менен)",h_partners:"Келишим түзгөн компаниялар — коркунуч көзөмөлү",g_notify:"Кабар каналы",l_channel:"Эскертүүлөр кайда келсин?",ch_inapp:"Панелде гана",l_tgchat:"Telegram chat ID",h_tgchat:"@userinfobot-ко жазыңыз — ал chat ID номериңизди берет",btn_save:"Профилди сактоо",saved:"Профиль сакталды ✅",btn_cancel_sub:"Жазылууну токтотуу",cancel_confirm:"Жазылууну токтотосузбу? Мөөнөт бүткөнчө колдоно аласыз.",cancelled:"Жазылуу токтотулду",how_title:"Yurist AI Pro кантип иштейт?",how_sub:"3 мүнөттө жөндөңүз — андан кийин агенттер өздөрү иштейт.",s1_t:"Көзөмөл профилин толтуруңуз",s1_d:"Бизнес аты, салык режими, келишимдер, кызматкерлер, лицензиялар — бир жолу киргизесиз, агенттер ушул маалымат негизинде иштейт.",s2_t:"Кабар каналын тандаңыз",s2_d:"Эскертүүлөр панелге, Telegram'га, email же SMS'ке келиши мүмкүн. Telegram үчүн chat ID киргизиңиз.",s3_t:"Агенттер автоматтык иштейт",s3_d:"Күнүнө бир жолу эки агент бардык коркунучтарды текшерет: келишим мөөнөтү, салык датасы, мыйзам өзгөрүүсү, кызматкер жана лицензия маселелери. «Азыр текшерүү» менен кол менен да иштете аласыз.",s4_t:"Коркунуч табылса — дароо кабар",s4_d:"🔴 Критикалык (7 күндөн аз калды же мөөнөт өткөн), 🟡 Эскертүү (14 күнгө чейин), 🔵 Маалымат. Ар бир эскертүүдө эмне кылуу керектиги жазылган.",btn_understood:"Түшүнүктүү!",activated:"Yurist AI Pro активдештирилди! 🎉",err:"Ката кетти",c_title:"Келишим аталышы",c_party:"Контрагент",c_date:"Бүтүү датасы",e_name:"Аты-жөнү",e_pos:"Кызмат орду",e_type:"Келишим түрү",e_fixed:"Мөөнөттүү",e_indef:"Мөөнөтсүз",e_nocontract:"Келишим жок!",l_name:"Лицензия аталышы",l_org:"Берген орган",l_date:"Бүтүү датасы",t_mehnat:"Эмгек",t_soliq:"Салык",t_litsenziya:"Лицензия",t_ijara:"Ижара",t_import:"Импорт/Экспорт",t_reklama:"Жарнама"},
+tg:{back_to_app:"‹ Бозгашт ба барнома",login_required:"Аввал ба система ворид шавед",login_required_sub:"Барои истифодаи панели Yurist AI Pro дар барномаи асосӣ ба ҳисоби худ ворид шавед.",go_login:"Гузаштан ба саҳифаи воридшавӣ",pw_title:"Системаи иммунии бизнеси шумо",pw_sub:"Ду агенти AI ҳатто вақте ки шумо хоб ҳастед, кор мекунанд: тағйироти қонунҳо, мӯҳлатҳои шартнома, санаҳои андоз, хатарҳои корманд ва литсензия — ҳама автоматӣ назорат мешавад ва ҳангоми ёфтани хатар фавран ба шумо хабар дода мешавад.",plan_b2c:"Шахсӣ (B2C)",plan_b2b:"Бизнес (B2B)",per_month:"сум / моҳ",tag_business:"БАРОИ БИЗНЕС",f_watcher:"Агенти Нозир — мониторинги қонун, шартнома, суд",f_contracts:"Назорати мӯҳлати то 10 шартнома",f_alerts:"Панел + огоҳиҳои Telegram/Email",f_daily:"Санҷиши ҳаррӯзаи автоматӣ",f_both:"Ҳарду агент: Нозир + Саломатии Бизнес",f_tax:"Тақвими андоз (ААИ 12%/6%, андози иҷтимоӣ)",f_emp:"Мониторинги хатари корманд ва литсензия",f_partner:"Назорати контрагент",f_unlimited:"Шартнома ва корманди бемаҳдуд",btn_activate:"Фаъолсозӣ",btn_activate2:"Фаъолсозӣ",test_note:"💡 Реҳими санҷишӣ: интегратсияи пардохт (Payme/Click) ба зудӣ илова мешавад — ҳоло тариф фавран, бе пардохт фаъол мешавад.",panel_title:"Панели агентҳо",panel_sub:"Ҳарду агент бизнеси шуморо аз берун ва дарун муҳофизат мекунанд. Профил ҳар қадар пурра бошад, муҳофизат ҳамон қадар дақиқ кор мекунад.",days_left:"Обуна:",days_word:"рӯз",agent1_name:"Агенти Нозир",agent1_desc:"Хатарҳои беруна: тағйироти қонунгузорӣ (lex.uz), мӯҳлатҳои шартнома, назорати феҳристи судӣ.",agent2_name:"Агенти Саломатии Бизнес",agent2_desc:"Хатарҳои дохилӣ: мӯҳлатҳои андоз, шартномаҳои меҳнатӣ, литсензияҳо, санҷиши контрагент.",last_run:"Санҷиши охирин:",last_run2:"Санҷиши охирин:",never_run:"ҳанӯз кор накардааст",btn_run:"🔍 Ҳозир санҷидан",run_done:(n)=>`Санҷиш анҷом ёфт: ${n} огоҳӣ ёфт шуд`,alerts_title:"Огоҳиҳо",btn_mark_read:"Ҳамаро хондашуда қайд кардан",alerts_empty:"Ҳоло огоҳӣ нест. Профилро пур карда, тугмаи «Ҳозир санҷидан»-ро пахш кунед.",profile_title:"Профили назорат",g_business:"Маълумоти бизнес",l_bizname:"Номи бизнес",l_biztype:"Навъи фаъолият",l_inn:"РМА (ИНН)",l_regime:"Реҳими андоз",r_qqs12:"ААИ 12% + андози фоида",r_qqs6:"ААИ 6% (соддакардашудаи нав)",r_simpl:"Андози гардиш (соддакардашуда)",r_ind:"Соҳибкори инфиродӣ",g_topics:"Соҳаҳои назоратшавандаи қонунгузорӣ",g_contracts:"Шартномаҳо (назорати мӯҳлат)",btn_add_contract:"+ Илова кардани шартнома",g_employees:"Кормандон",btn_add_emp:"+ Илова кардани корманд",g_licenses:"Литсензияҳо ва иҷозатномаҳо",btn_add_lic:"+ Илова кардани литсензия",g_watch:"Назорати суд ва шарикон",l_court:"Назорати судӣ (номҳо, бо вергул)",h_court:"Номҳои ширкат ё шахс — ҳангоми кушодани парванда хабар медиҳем",l_partners:"Шарикон (бо вергул)",h_partners:"Ширкатҳои шартномавӣ — назорати хатар",g_notify:"Канали огоҳӣ",l_channel:"Огоҳиҳо ба куҷо оянд?",ch_inapp:"Танҳо дар панел",l_tgchat:"Telegram chat ID",h_tgchat:"Ба @userinfobot нависед — он рақами chat ID-и шуморо медиҳад",btn_save:"Захира кардани профил",saved:"Профил захира шуд ✅",btn_cancel_sub:"Бекор кардани обуна",cancel_confirm:"Обунаро бекор мекунед? То охири мӯҳлат истифода бурда метавонед.",cancelled:"Обуна бекор карда шуд",how_title:"Yurist AI Pro чӣ тавр кор мекунад?",how_sub:"Дар 3 дақиқа танзим кунед — баъд агентҳо худашон кор мекунанд.",s1_t:"Профили назоратро пур кунед",s1_d:"Номи бизнес, реҳими андоз, шартномаҳо, кормандон, литсензияҳо — як бор ворид мекунед, агентҳо дар асоси ин маълумот кор мекунанд.",s2_t:"Канали огоҳиро интихоб кунед",s2_d:"Огоҳиҳо ба панел, Telegram, email ё SMS омада метавонанд. Барои Telegram chat ID-ро ворид кунед.",s3_t:"Агентҳо автоматӣ кор мекунанд",s3_d:"Рӯзе як маротиба ҳарду агент ҳамаи хатарҳоро месанҷанд: мӯҳлати шартнома, санаи андоз, тағйироти қонун, мушкилоти корманд ва литсензия. Бо «Ҳозир санҷидан» дастӣ ҳам оғоз карда метавонед.",s4_t:"Хатар ёфт шуд — фавран хабар",s4_d:"🔴 Критикӣ (камтар аз 7 рӯз монд ё мӯҳлат гузашт), 🟡 Огоҳӣ (то 14 рӯз), 🔵 Маълумот. Дар ҳар огоҳӣ чӣ кор кардан лозим навишта шудааст.",btn_understood:"Фаҳмо!",activated:"Yurist AI Pro фаъол шуд! 🎉",err:"Хатогӣ рух дод",c_title:"Номи шартнома",c_party:"Контрагент",c_date:"Санаи анҷом",e_name:"Ному насаб",e_pos:"Вазифа",e_type:"Навъи шартнома",e_fixed:"Мӯҳлатнок",e_indef:"Бемӯҳлат",e_nocontract:"Шартнома нест!",l_name:"Номи литсензия",l_org:"Мақоми додашуда",l_date:"Санаи анҷом",t_mehnat:"Меҳнат",t_soliq:"Андоз",t_litsenziya:"Литсензия",t_ijara:"Иҷора",t_import:"Импорт/Экспорт",t_reklama:"Реклама"},
+tk:{back_to_app:"‹ Programma dolan",login_required:"Ilki ulgama giriň",login_required_sub:"Yurist AI Pro panelini ulanmak üçin esasy programmada hasabyňyza giriň.",go_login:"Giriş sahypasyna geç",pw_title:"Işiňiziň immun ulgamy",pw_sub:"Iki AI agent siz ýatyrkaňyz hem işleýär: kanun üýtgeşmeleri, şertnama möhletleri, salgyt seneleri, işgär we ygtyýarnama howplary — ählisi awtomatik gözegçilikde we howp tapylan badyna size habar berilýär.",plan_b2c:"Şahsy (B2C)",plan_b2b:"Biznes (B2B)",per_month:"sum / aý",tag_business:"BIZNES ÜÇIN",f_watcher:"Gözegçi Agent — kanun, şertnama, kazyýet gözegçiligi",f_contracts:"10 çenli şertnama möhletine gözegçilik",f_alerts:"Panel + Telegram/Email duýduryşlar",f_daily:"Her gün awtomatik barlag",f_both:"Iki agent: Gözegçi + Biznes Saglygy",f_tax:"Salgyt senenamasy (GBS 12%/6%, sosial salgyt)",f_emp:"Işgär we ygtyýarnama howp gözegçiligi",f_partner:"Kontragent gözegçiligi",f_unlimited:"Çäksiz şertnama we işgär",btn_activate:"Işjeňleştir",btn_activate2:"Işjeňleştir",test_note:"💡 Synag rejimi: töleg integrasiýasy (Payme/Click) ýakynda goşular — häzirlikçe tarif derrew, tölegsiz işjeňleşýär.",panel_title:"Agentler paneli",panel_sub:"Iki agent işiňizi daşyndan we içinden goraýar. Profil näçe doly bolsa, gorag şonça takyk işleýär.",days_left:"Abuna:",days_word:"gün",agent1_name:"Gözegçi Agent",agent1_desc:"Daşarky howplar: kanunçylyk üýtgeşmeleri (lex.uz), şertnama möhletleri, kazyýet sanawyna gözegçilik.",agent2_name:"Biznes Saglygy Agenti",agent2_desc:"Içerki howplar: salgyt möhletleri, zähmet şertnamalary, ygtyýarnamalar, kontragent barlagy.",last_run:"Soňky barlag:",last_run2:"Soňky barlag:",never_run:"heniz işledilmedi",btn_run:"🔍 Häzir barlamak",run_done:(n)=>`Barlag tamamlandy: ${n} duýduryş tapyldy`,alerts_title:"Duýduryşlar",btn_mark_read:"Ählisini okaldy diýip bellemek",alerts_empty:"Häzirlikçe duýduryş ýok. Profili dolduryp, «Häzir barlamak» düwmesine basyň.",profile_title:"Gözegçilik profili",g_business:"Biznes maglumatlary",l_bizname:"Biznes ady",l_biztype:"Iş görnüşi",l_inn:"STIR (INN)",l_regime:"Salgyt rejimi",r_qqs12:"GBS 12% + peýda salgydy",r_qqs6:"GBS 6% (täze ýönekeýleşdirilen)",r_simpl:"Dolanyşyk salgydy (ýönekeýleşdirilen)",r_ind:"Şahsy telekeçi",g_topics:"Gözegçilikdäki kanunçylyk ugurlary",g_contracts:"Şertnamalar (möhlet gözegçiligi)",btn_add_contract:"+ Şertnama goşmak",g_employees:"Işgärler",btn_add_emp:"+ Işgär goşmak",g_licenses:"Ygtyýarnamalar we rugsatlar",btn_add_lic:"+ Ygtyýarnama goşmak",g_watch:"Kazyýet we hyzmatdaş gözegçiligi",l_court:"Kazyýet gözegçiligi (atlar, otur bilen)",h_court:"Kompaniýa ýa-da adam atlary — iş açylsa habar bereris",l_partners:"Hyzmatdaşlar (otur bilen)",h_partners:"Şertnama baglaşýan kompaniýalar — howp gözegçiligi",g_notify:"Habar kanaly",l_channel:"Duýduryşlar nirä gelsin?",ch_inapp:"Diňe panelde",l_tgchat:"Telegram chat ID",h_tgchat:"@userinfobot-a ýazyň — ol chat ID belgiňizi berer",btn_save:"Profili saklamak",saved:"Profil saklandy ✅",btn_cancel_sub:"Abunany ýatyrmak",cancel_confirm:"Abunany ýatyrýarsyňyzmy? Möhlet gutarýança ulanyp bilersiňiz.",cancelled:"Abuna ýatyryldy",how_title:"Yurist AI Pro nähili işleýär?",how_sub:"3 minutda sazlaň — soň agentler özleri işlär.",s1_t:"Gözegçilik profilini dolduryň",s1_d:"Biznes ady, salgyt rejimi, şertnamalar, işgärler, ygtyýarnamalar — bir gezek girizýärsiňiz, agentler şu maglumat esasynda işleýär.",s2_t:"Habar kanalyny saýlaň",s2_d:"Duýduryşlar panele, Telegram-a, email ýa-da SMS-e gelip biler. Telegram üçin chat ID giriziň.",s3_t:"Agentler awtomatik işleýär",s3_d:"Günde bir gezek iki agent ähli howplary barlaýar: şertnama möhleti, salgyt senesi, kanun üýtgeşmesi, işgär we ygtyýarnama meseleleri. «Häzir barlamak» bilen el bilen hem işledip bilersiňiz.",s4_t:"Howp tapylsa — derrew habar",s4_d:"🔴 Kritiki (7 günden az galdy ýa-da möhlet geçdi), 🟡 Duýduryş (14 güne çenli), 🔵 Maglumat. Her duýduryşda näme etmelidigi ýazylan.",btn_understood:"Düşnükli!",activated:"Yurist AI Pro işjeňleşdirildi! 🎉",err:"Ýalňyşlyk ýüze çykdy",c_title:"Şertnama ady",c_party:"Kontragent",c_date:"Gutarýan senesi",e_name:"Ady-familiýasy",e_pos:"Wezipesi",e_type:"Şertnama görnüşi",e_fixed:"Möhletli",e_indef:"Möhletsiz",e_nocontract:"Şertnama ýok!",l_name:"Ygtyýarnama ady",l_org:"Beren edara",l_date:"Gutarýan senesi",t_mehnat:"Zähmet",t_soliq:"Salgyt",t_litsenziya:"Ygtyýarnama",t_ijara:"Kärende",t_import:"Import/Eksport",t_reklama:"Mahabat"},
+az:{back_to_app:"‹ Tətbiqə qayıt",login_required:"Əvvəlcə sistemə daxil olun",login_required_sub:"Yurist AI Pro panelindən istifadə etmək üçün əsas tətbiqdə hesabınıza daxil olun.",go_login:"Giriş səhifəsinə keç",pw_title:"Biznesinizin immun sistemi",pw_sub:"İki AI agent siz yatarkən belə işləyir: qanun dəyişiklikləri, müqavilə müddətləri, vergi tarixləri, işçi və lisenziya riskləri — hər şey avtomatik izlənilir və risk tapılan kimi sizə xəbər verilir.",plan_b2c:"Şəxsi (B2C)",plan_b2b:"Biznes (B2B)",per_month:"sum / ay",tag_business:"BİZNES ÜÇÜN",f_watcher:"Nəzarətçi Agent — qanun, müqavilə, məhkəmə monitorinqi",f_contracts:"10-a qədər müqavilə müddəti izlənməsi",f_alerts:"Panel + Telegram/Email xəbərdarlıqlar",f_daily:"Hər gün avtomatik yoxlama",f_both:"Hər iki agent: Nəzarətçi + Biznes Sağlamlığı",f_tax:"Vergi təqvimi (ƏDV 12%/6%, sosial vergi)",f_emp:"İşçi və lisenziya risk monitorinqi",f_partner:"Kontragent (tərəfdaş) monitorinqi",f_unlimited:"Limitsiz müqavilə və işçi",btn_activate:"Aktivləşdir",btn_activate2:"Aktivləşdir",test_note:"💡 Test rejimi: ödəniş inteqrasiyası (Payme/Click) tezliklə əlavə olunacaq — hələlik tarif dərhal, ödənişsiz aktivləşir.",panel_title:"Agentlər paneli",panel_sub:"Hər iki agent biznesinizi çöldən və içəridən qoruyur. Profil nə qədər dolğun olsa, qoruma o qədər dəqiq işləyir.",days_left:"Abunə:",days_word:"gün",agent1_name:"Nəzarətçi Agent",agent1_desc:"Xarici risklər: qanunvericilik dəyişiklikləri (lex.uz), müqavilə müddətləri, məhkəmə reyestrinə nəzarət.",agent2_name:"Biznes Sağlamlığı Agenti",agent2_desc:"Daxili risklər: vergi müddətləri, əmək müqavilələri, lisenziyalar, kontragent yoxlaması.",last_run:"Son yoxlama:",last_run2:"Son yoxlama:",never_run:"hələ işə salınmayıb",btn_run:"🔍 İndi yoxla",run_done:(n)=>`Yoxlama bitdi: ${n} xəbərdarlıq tapıldı`,alerts_title:"Xəbərdarlıqlar",btn_mark_read:"Hamısını oxundu et",alerts_empty:"Hələlik xəbərdarlıq yoxdur. Profili doldurub «İndi yoxla» düyməsinə basın.",profile_title:"Monitorinq profili",g_business:"Biznes məlumatları",l_bizname:"Biznes adı",l_biztype:"Fəaliyyət növü",l_inn:"VÖEN (İNN)",l_regime:"Vergi rejimi",r_qqs12:"ƏDV 12% + mənfəət vergisi",r_qqs6:"ƏDV 6% (yeni sadələşdirilmiş)",r_simpl:"Dövriyyə vergisi (sadələşdirilmiş)",r_ind:"Fərdi sahibkar",g_topics:"İzlənən qanunvericilik sahələri",g_contracts:"Müqavilələr (müddət izlənməsi)",btn_add_contract:"+ Müqavilə əlavə et",g_employees:"İşçilər",btn_add_emp:"+ İşçi əlavə et",g_licenses:"Lisenziyalar və icazələr",btn_add_lic:"+ Lisenziya əlavə et",g_watch:"Məhkəmə və tərəfdaş monitorinqi",l_court:"Məhkəmə izlənməsi (adlar, vergüllə)",h_court:"Şirkət və ya şəxs adları — iş açılsa xəbər verəcəyik",l_partners:"Tərəfdaşlar (vergüllə)",h_partners:"Müqavilə bağladığınız şirkətlər — risk monitorinqi",g_notify:"Bildiriş kanalı",l_channel:"Xəbərdarlıqlar hara gəlsin?",ch_inapp:"Yalnız paneldə",l_tgchat:"Telegram chat ID",h_tgchat:"@userinfobot-a yazın — o, chat ID nömrənizi göstərəcək",btn_save:"Profili yadda saxla",saved:"Profil yadda saxlanıldı ✅",btn_cancel_sub:"Abunəni ləğv et",cancel_confirm:"Abunəni ləğv edirsiniz? Müddət bitənə qədər istifadə edə bilərsiniz.",cancelled:"Abunə ləğv edildi",how_title:"Yurist AI Pro necə işləyir?",how_sub:"3 dəqiqəyə quraşdırın — sonra agentlər özləri işləyir.",s1_t:"Monitorinq profilini doldurun",s1_d:"Biznes adı, vergi rejimi, müqavilələr, işçilər, lisenziyalar — bir dəfə daxil edirsiniz, agentlər bu məlumat əsasında işləyir.",s2_t:"Bildiriş kanalını seçin",s2_d:"Xəbərdarlıqlar panelə, Telegram-a, email və ya SMS-ə gələ bilər. Telegram üçün chat ID daxil edin.",s3_t:"Agentlər avtomatik işləyir",s3_d:"Gündə bir dəfə hər iki agent bütün riskləri yoxlayır: müqavilə müddəti, vergi tarixi, qanun dəyişikliyi, işçi və lisenziya problemləri. «İndi yoxla» ilə əl ilə də işə sala bilərsiniz.",s4_t:"Risk tapıldı — dərhal xəbər",s4_d:"🔴 Kritik (7 gündən az qalıb və ya müddət keçib), 🟡 Xəbərdarlıq (14 günə qədər), 🔵 Məlumat. Hər xəbərdarlıqda nə etmək lazım olduğu yazılıb.",btn_understood:"Aydındır!",activated:"Yurist AI Pro aktivləşdirildi! 🎉",err:"Xəta baş verdi",c_title:"Müqavilə adı",c_party:"Kontragent",c_date:"Bitmə tarixi",e_name:"Ad soyad",e_pos:"Vəzifə",e_type:"Müqavilə növü",e_fixed:"Müddətli",e_indef:"Müddətsiz",e_nocontract:"Müqavilə yoxdur!",l_name:"Lisenziya adı",l_org:"Verən orqan",l_date:"Bitmə tarixi",t_mehnat:"Əmək",t_soliq:"Vergi",t_litsenziya:"Lisenziya",t_ijara:"İcarə",t_import:"İdxal/İxrac",t_reklama:"Reklam"},
+};
+
+/* ================= HOLAT ================= */
+const API = '/api';
+let curLang = localStorage.getItem('yurist_pro_lang') || 'uz';
+let token = localStorage.getItem('yurist_token');
+let profileData = null;
+
+function t(key, ...args){
+  const d = PRO_I18N[curLang] || PRO_I18N.uz;
+  const v = d[key] !== undefined ? d[key] : (PRO_I18N.uz[key] || key);
+  return typeof v === 'function' ? v(...args) : v;
+}
+function applyLang(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const v = t(el.dataset.i18n);
+    if (typeof v === 'string') el.textContent = v;
+  });
+  document.documentElement.lang = curLang;
+  renderTopicChips();
+  if (profileData) renderSubLists();
+}
+document.getElementById('langSel').value = curLang;
+document.getElementById('langSel').addEventListener('change', e=>{
+  curLang = e.target.value;
+  localStorage.setItem('yurist_pro_lang', curLang);
+  applyLang();
+  loadAlerts(); // vaqt formatlari yangilansin
+});
+
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3200);
+}
+
+async function apiFetch(path, opts={}){
+  const resp = await fetch(API+path, {
+    ...opts,
+    headers: {
+      'Content-Type':'application/json',
+      ...(token ? {Authorization:'Bearer '+token} : {}),
+      ...(opts.headers||{}),
+    },
+  });
+  const data = await resp.json().catch(()=>({}));
+  if (!resp.ok) throw Object.assign(new Error(data.error||t('err')), {status:resp.status, data});
+  return data;
+}
+
+/* ================= EKRANLAR ================= */
+function show(id){
+  ['viewLogin','viewPaywall','viewPanel'].forEach(v=>document.getElementById(v).classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+
+async function init(){
+  applyLang();
+  if (!token){ show('viewLogin'); return; }
+  try {
+    // Foydalanuvchi tilini olish (serverdagi sozlama ustuvor)
+    const me = await apiFetch('/users/me');
+    if (me && me.lang && PRO_I18N[me.lang]){
+      curLang = me.lang;
+      document.getElementById('langSel').value = curLang;
+      localStorage.setItem('yurist_pro_lang', curLang);
+      applyLang();
+    }
+  } catch(e){
+    if (e.status === 401){ show('viewLogin'); return; }
+  }
+  await refreshStatus();
+}
+
+async function refreshStatus(){
+  try {
+    const st = await apiFetch('/pro/status');
+    if (!st.isPro){ show('viewPaywall'); return; }
+    show('viewPanel');
+    document.getElementById('daysLeft').textContent = st.daysLeft;
+    document.getElementById('watcherLast').textContent = st.lastWatcherRunAt ? fmtTime(st.lastWatcherRunAt) : t('never_run');
+    document.getElementById('healthLast').textContent = st.lastHealthRunAt ? fmtTime(st.lastHealthRunAt) : t('never_run');
+    updateUnread(st.unreadAlerts);
+    await Promise.all([loadProfile(), loadAlerts()]);
+  } catch(e){
+    if (e.status === 401) show('viewLogin');
+    else toast(e.message);
+  }
+}
+
+function fmtTime(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined,{day:'2-digit',month:'2-digit'}) + ' ' +
+         d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+function updateUnread(n){
+  const b = document.getElementById('unreadBadge');
+  if (n>0){ b.textContent=n; b.classList.remove('hidden'); }
+  else b.classList.add('hidden');
+}
+
+/* ================= OBUNA ================= */
+async function subscribe(plan){
+  try {
+    await apiFetch('/pro/subscribe', {method:'POST', body:JSON.stringify({plan})});
+    toast(t('activated'));
+    openHow(); // INSTRUKSIYA -- sotib olgandan keyin avtomatik ochiladi
+    await refreshStatus();
+  } catch(e){ toast(e.message); }
+}
+async function cancelSub(){
+  if (!confirm(t('cancel_confirm'))) return;
+  try {
+    await apiFetch('/pro/cancel', {method:'DELETE'});
+    toast(t('cancelled'));
+    await refreshStatus();
+  } catch(e){ toast(e.message); }
+}
+
+/* ================= INSTRUKSIYA MODALI ================= */
+function openHow(){ document.getElementById('howModal').classList.add('open'); }
+function closeHow(){ document.getElementById('howModal').classList.remove('open'); }
+document.getElementById('helpBtn').addEventListener('click', openHow);
+document.getElementById('howModal').addEventListener('click', e=>{
+  if (e.target.id==='howModal') closeHow();
+});
+
+/* ================= PROFIL ================= */
+const TOPIC_KEYS = ['mehnat','soliq','litsenziya','ijara','import_eksport','reklama'];
+const TOPIC_LABELS = {mehnat:'t_mehnat',soliq:'t_soliq',litsenziya:'t_litsenziya',ijara:'t_ijara',import_eksport:'t_import',reklama:'t_reklama'};
+let selectedTopics = new Set(['mehnat','soliq','litsenziya']);
+
+function renderTopicChips(){
+  const box = document.getElementById('topicChips');
+  if (!box) return;
+  box.innerHTML = '';
+  TOPIC_KEYS.forEach(k=>{
+    const c = document.createElement('button');
+    c.className = 'chip' + (selectedTopics.has(k) ? ' on' : '');
+    c.textContent = t(TOPIC_LABELS[k]);
+    c.onclick = ()=>{ selectedTopics.has(k) ? selectedTopics.delete(k) : selectedTopics.add(k); renderTopicChips(); };
+    box.appendChild(c);
+  });
+}
+
+document.getElementById('fChannel').addEventListener('change', e=>{
+  document.getElementById('tgField').style.display = e.target.value==='telegram' ? 'block' : 'none';
+});
+
+/* Dinamik ro'yxatlar */
+let contracts = [], employees = [], licenses = [];
+
+function dateVal(d){ return d ? new Date(d).toISOString().slice(0,10) : ''; }
+
+function renderSubLists(){
+  const cl = document.getElementById('contractsList');
+  cl.innerHTML = '';
+  contracts.forEach((c,i)=>{
+    const row = document.createElement('div'); row.className='sub-row';
+    row.innerHTML = `
+      <input placeholder="${t('c_title')}" value="${esc(c.title||'')}" oninput="contracts[${i}].title=this.value">
+      <input placeholder="${t('c_party')}" value="${esc(c.counterparty||'')}" oninput="contracts[${i}].counterparty=this.value">
+      <input type="date" title="${t('c_date')}" value="${dateVal(c.expiresAt)}" oninput="contracts[${i}].expiresAt=this.value">
+      <button class="rm" onclick="contracts.splice(${i},1);renderSubLists()">✕</button>`;
+    cl.appendChild(row);
+  });
+
+  const el = document.getElementById('employeesList');
+  el.innerHTML = '';
+  employees.forEach((e,i)=>{
+    const row = document.createElement('div'); row.className='sub-row';
+    row.innerHTML = `
+      <input placeholder="${t('e_name')}" value="${esc(e.name||'')}" oninput="employees[${i}].name=this.value">
+      <input placeholder="${t('e_pos')}" value="${esc(e.position||'')}" oninput="employees[${i}].position=this.value">
+      <select onchange="empTypeChange(${i},this.value)">
+        <option value="indefinite" ${e.contractType!=='fixed'&&e.hasContract!==false?'selected':''}>${t('e_indef')}</option>
+        <option value="fixed" ${e.contractType==='fixed'?'selected':''}>${t('e_fixed')}</option>
+        <option value="none" ${e.hasContract===false?'selected':''}>${t('e_nocontract')}</option>
+      </select>
+      <button class="rm" onclick="employees.splice(${i},1);renderSubLists()">✕</button>`;
+    el.appendChild(row);
+    if (e.contractType==='fixed'){
+      const dr = document.createElement('div'); dr.className='sub-row';
+      dr.style.gridTemplateColumns = '1fr auto';
+      dr.innerHTML = `<input type="date" title="${t('c_date')}" value="${dateVal(e.contractExpiresAt)}" oninput="employees[${i}].contractExpiresAt=this.value"><span style="font-size:12px;color:var(--muted)">${t('c_date')}</span>`;
+      el.appendChild(dr);
+    }
+  });
+
+  const ll = document.getElementById('licensesList');
+  ll.innerHTML = '';
+  licenses.forEach((l,i)=>{
+    const row = document.createElement('div'); row.className='sub-row';
+    row.innerHTML = `
+      <input placeholder="${t('l_name')}" value="${esc(l.name||'')}" oninput="licenses[${i}].name=this.value">
+      <input placeholder="${t('l_org')}" value="${esc(l.issuedBy||'')}" oninput="licenses[${i}].issuedBy=this.value">
+      <input type="date" title="${t('l_date')}" value="${dateVal(l.expiresAt)}" oninput="licenses[${i}].expiresAt=this.value">
+      <button class="rm" onclick="licenses.splice(${i},1);renderSubLists()">✕</button>`;
+    ll.appendChild(row);
+  });
+}
+function empTypeChange(i, v){
+  if (v==='none'){ employees[i].hasContract=false; employees[i].contractType='indefinite'; }
+  else { employees[i].hasContract=true; employees[i].contractType=v; }
+  renderSubLists();
+}
+function addContract(){ contracts.push({title:'',counterparty:'',expiresAt:''}); renderSubLists(); }
+function addEmployee(){ employees.push({name:'',position:'',contractType:'indefinite',hasContract:true}); renderSubLists(); }
+function addLicense(){ licenses.push({name:'',issuedBy:'',expiresAt:''}); renderSubLists(); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+async function loadProfile(){
+  try {
+    const r = await apiFetch('/pro/profile');
+    if (!r.profile) { renderSubLists(); return; }
+    profileData = r.profile;
+    const p = r.profile;
+    document.getElementById('fBizName').value = p.businessName || '';
+    document.getElementById('fBizType').value = p.businessType || '';
+    document.getElementById('fInn').value = p.inn || '';
+    document.getElementById('fRegime').value = p.taxRegime || '';
+    document.getElementById('fCourtNames').value = (p.courtWatchNames||[]).join(', ');
+    document.getElementById('fPartners').value = (p.watchPartners||[]).join(', ');
+    selectedTopics = new Set(p.watchTopics && p.watchTopics.length ? p.watchTopics : ['mehnat','soliq','litsenziya']);
+    contracts = (p.contracts||[]).map(c=>({title:c.title,counterparty:c.counterparty,expiresAt:c.expiresAt}));
+    employees = (p.employees||[]).map(e=>({name:e.name,position:e.position,contractType:e.contractType,hasContract:e.hasContract,contractExpiresAt:e.contractExpiresAt}));
+    licenses = (p.licenses||[]).map(l=>({name:l.name,issuedBy:l.issuedBy,expiresAt:l.expiresAt}));
+    renderTopicChips();
+    renderSubLists();
+    // Xabar kanali obunadan olinadi
+    const st = await apiFetch('/pro/status');
+    document.getElementById('fChannel').value = st.notifyChannel || 'inapp';
+    document.getElementById('tgField').style.display = st.notifyChannel==='telegram' ? 'block' : 'none';
+  } catch(e){ renderSubLists(); }
+}
+
+async function saveProfile(){
+  const splitCsv = (v)=>v.split(',').map(s=>s.trim()).filter(Boolean);
+  const body = {
+    businessName: document.getElementById('fBizName').value.trim(),
+    businessType: document.getElementById('fBizType').value.trim(),
+    inn: document.getElementById('fInn').value.trim(),
+    taxRegime: document.getElementById('fRegime').value || null,
+    watchTopics: [...selectedTopics],
+    courtWatchNames: splitCsv(document.getElementById('fCourtNames').value),
+    watchPartners: splitCsv(document.getElementById('fPartners').value),
+    contracts: contracts.filter(c=>c.title && c.expiresAt),
+    employees: employees.filter(e=>e.name),
+    licenses: licenses.filter(l=>l.name && l.expiresAt),
+  };
+  try {
+    await apiFetch('/pro/profile', {method:'POST', body:JSON.stringify(body)});
+    // Xabar kanalini obunada yangilash (subscribe endpoint qayta ishlatiladi --
+    // faol obunada faqat kanal yangilanadi, muddat o'zgarmaydi)
+    const channel = document.getElementById('fChannel').value;
+    const tgChat = document.getElementById('fTgChat').value.trim();
+    await apiFetch('/pro/notify-channel', {method:'POST', body:JSON.stringify({notifyChannel:channel, telegramChatId:tgChat})}).catch(()=>{});
+    toast(t('saved'));
+  } catch(e){ toast(e.message); }
+}
+
+/* ================= AGENTLAR ================= */
+async function runAll(){
+  const strip = document.getElementById('runStrip');
+  const btn = document.getElementById('runAllBtn');
+  strip.classList.add('loading'); btn.disabled = true;
+  document.getElementById('runResult').textContent = '';
+  try {
+    const r = await apiFetch('/pro/run-all', {method:'POST'});
+    document.getElementById('runResult').textContent = t('run_done', r.totalAlerts||0);
+    await refreshStatus();
+  } catch(e){ toast(e.message); }
+  strip.classList.remove('loading'); btn.disabled = false;
+}
+
+/* ================= OGOHLANTIRISHLAR ================= */
+async function loadAlerts(){
+  try {
+    const r = await apiFetch('/pro/alerts');
+    updateUnread(r.unread||0);
+    const box = document.getElementById('alertsList');
+    if (!r.alerts || r.alerts.length===0){
+      box.innerHTML = `<div class="empty-note">${t('alerts_empty')}</div>`;
+      return;
+    }
+    box.innerHTML = '';
+    r.alerts.forEach(a=>{
+      const div = document.createElement('div');
+      div.className = 'alert-item' + (a.isRead ? '' : ' unread');
+      div.innerHTML = `
+        <div class="lv ${a.level||'info'}"></div>
+        <div>
+          <div class="a-title">${esc(a.title||'')}</div>
+          <div class="a-msg">${esc(a.message||'')}</div>
+          <div class="a-time">${a.createdAt ? fmtTime(a.createdAt) : ''}</div>
+        </div>`;
+      box.appendChild(div);
+    });
+  } catch(e){ /* jim */ }
+}
+async function markRead(){
+  try {
+    await apiFetch('/pro/alerts/read', {method:'POST'});
+    await loadAlerts();
+  } catch(e){ toast(e.message); }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><title>Google Login</title>
+<style>body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f0f4ff}</style>
+</head>
+<body>
+<div id="box" style="text-align:center;padding:32px 40px;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1)">
+  <div style="font-size:36px">⏳</div>
+  <div style="margin-top:12px;color:#555">Yuklanmoqda...</div>
+</div>
+<script>
+var hash = window.location.hash.replace('#','');
+var token = new URLSearchParams(hash).get('access_token');
+var error = new URLSearchParams(hash).get('error');
+
+if (token) {
+  document.getElementById('box').innerHTML = '<div style="font-size:36px">✅</div><div style="margin-top:12px;color:#16a34a;font-size:15px">Muvaffaqiyatli! Oyna yopilmoqda...</div>';
+  
+  // 1. BroadcastChannel (g_oauth -- asosiy sahifa bilan bir xil nom)
+  try { var bc = new BroadcastChannel('g_oauth'); bc.postMessage({token:token}); bc.close(); } catch(e){}
+  
+  // 2. localStorage
+  localStorage.setItem('g_token', token);
+  
+  // 3. postMessage
+  try { if (window.opener) window.opener.postMessage({g_token:token}, '*'); } catch(e){}
+  
+  setTimeout(function(){ window.close(); }, 800);
+} else {
+  document.getElementById('box').innerHTML = '<div style="font-size:36px">❌</div><div style="margin-top:12px;color:#dc2626">' + (error||'Xato') + '</div>';
+  setTimeout(function(){ window.close(); }, 2000);
+}
+</script>
+</body>
+</html>
