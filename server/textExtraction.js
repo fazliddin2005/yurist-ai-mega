@@ -50,12 +50,13 @@ async function extractText(buffer, mimetype, filename) {
   // ---- PDF ----
   if (mime.includes('pdf') || fname.endsWith('.pdf')) {
     try {
-      const parser = new pdfParse({ data: buffer });
-      const result = await parser.getText({ first: MAX_PDF_PAGES });
-      const warning = result.total > MAX_PDF_PAGES
-        ? `Hujjat ${result.total} betdan iborat -- birinchi ${MAX_PDF_PAGES} bet tahlil qilindi`
+      // pdf-parse -- to'g'ri ishlatish: funksiya sifatida, class emas.
+      // options.max = birinchi N betni o'qish (0 = hammasi)
+      const result = await pdfParse(buffer, { max: MAX_PDF_PAGES });
+      const warning = result.numpages > MAX_PDF_PAGES
+        ? `Hujjat ${result.numpages} betdan iborat -- birinchi ${MAX_PDF_PAGES} bet tahlil qilindi`
         : undefined;
-      return { text: result.text || '', method: 'pdf', pages: result.total, warning };
+      return { text: result.text || '', method: 'pdf', pages: result.numpages, warning };
     } catch (e) {
       console.error('[textExtraction] PDF o\'qishda xato:', e.message);
       return { text: '', method: 'pdf-failed', warning: 'PDF faylni o\'qib bo\'lmadi -- fayl buzilgan yoki parol bilan himoyalangan bo\'lishi mumkin' };
