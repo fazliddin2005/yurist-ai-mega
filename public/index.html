@@ -446,7 +446,7 @@
   .rsa-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--teal),var(--teal-dark));border-radius:3px;transition:width 1.5s ease}
 
   /* ===== IJTIMOIY KIRISH ===== */
-  .social-divider{display:none!important}  .social-btns{display:none!important}
+  .social-divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--muted);font-size:13px}  .social-btns{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
   .social-divider::before,.social-divider::after{content:"";flex:1;height:1px;background:var(--line)}
   .social-btns{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
   .social-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:11px 20px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer;transition:.15s;width:100%}
@@ -4848,12 +4848,12 @@ function exitQuiz() {
 // ================================================================
 function loginWithGoogle() {
   var clientId = window.GOOGLE_CLIENT_ID || '';
-  if (!clientId) { alert('GOOGLE_CLIENT_ID topilmadi'); return; }
+  if (!clientId) { alert('GOOGLE_CLIENT_ID topilmadi. Vercel Environment Variables da GOOGLE_CLIENT_ID ni tekshiring.'); return; }
 
   localStorage.removeItem('g_token');
 
   var btns = document.querySelectorAll('.google-btn');
-  btns.forEach(function(b) { b.disabled = true; b.textContent = 'Kutilmoqda...'; });
+  btns.forEach(function(b) { b.disabled = true; b.innerHTML = 'Kutilmoqda...'; });
 
   function resetBtns() {
     btns.forEach(function(b) {
@@ -4864,88 +4864,75 @@ function loginWithGoogle() {
 
   var done = false;
 
+  function handleToken(token) {
+    if (done) return;
+    done = true;
+    cleanup();
+    localStorage.removeItem('g_token');
+    doGoogleLogin(token);
+  }
+
   function tryToken() {
     if (done) return;
     var t = localStorage.getItem('g_token');
-    if (t) {
-      done = true;
-      cleanup();
-      localStorage.removeItem('g_token');
-      doGoogleLogin(t);
-    }
+    if (t) handleToken(t);
   }
 
   function cleanup() {
-    clearInterval(fastPoll);
-    clearInterval(slowPoll);
-    document.removeEventListener('visibilitychange', onVisible);
+    clearInterval(pollTimer);
+    window.removeEventListener('message', onMessage);
     window.removeEventListener('focus', onFocus);
+    document.removeEventListener('visibilitychange', onVisible);
     try { if (bc) bc.close(); } catch(e) {}
   }
 
-  // BroadcastChannel
+  // 1. postMessage listener (eng ishonchli usul)
+  function onMessage(e) {
+    if (!e.data) return;
+    var token = e.data.g_token || (e.data.token && e.data.token.length > 10 ? e.data.token : null);
+    if (token) handleToken(token);
+  }
+  window.addEventListener('message', onMessage);
+
+  // 2. BroadcastChannel
   var bc = null;
   try {
     bc = new BroadcastChannel('g_oauth');
     bc.onmessage = function(e) {
-      if (e.data && e.data.token) {
-        done = true;
-        cleanup();
-        localStorage.removeItem('g_token');
-        doGoogleLogin(e.data.token);
-      }
+      if (e.data && e.data.token) handleToken(e.data.token);
     };
   } catch(e) {}
 
-  // visibilitychange -- sahifa ko'ringanda tekshirish
-  function onVisible() {
-    if (!document.hidden) tryToken();
-  }
-  document.addEventListener('visibilitychange', onVisible);
-
-  // focus event
-  function onFocus() { tryToken(); }
-  window.addEventListener('focus', onFocus);
-
-  // Fast polling (dastlabki 5 sekund)
-  var fastPoll = setInterval(function() {
+  // 3. Polling (localStorage fallback)
+  var pollTimer = setInterval(function() {
     tryToken();
     if (popup && popup.closed && !done) {
       done = true;
       cleanup();
       resetBtns();
     }
-  }, 100);
+  }, 200);
 
-  // Slow polling (5 sekunddan keyin)
-  var slowPoll;
-  setTimeout(function() {
-    clearInterval(fastPoll);
-    if (done) return;
-    slowPoll = setInterval(function() {
-      tryToken();
-      if (popup && popup.closed && !done) {
-        done = true;
-        cleanup();
-        resetBtns();
-      }
-    }, 500);
-  }, 5000);
+  // 4. focus va visibility events
+  function onFocus() { tryToken(); }
+  function onVisible() { if (!document.hidden) tryToken(); }
+  window.addEventListener('focus', onFocus);
+  document.addEventListener('visibilitychange', onVisible);
 
-  // Popup
+  // Popup ochish
   var cbUrl = window.location.origin + '/google-callback.html';
   var authUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
     + '?client_id=' + encodeURIComponent(clientId)
     + '&redirect_uri=' + encodeURIComponent(cbUrl)
     + '&response_type=token'
-    + '&scope=openid%20email%20profile'
+    + '&scope=' + encodeURIComponent('openid email profile')
     + '&prompt=select_account';
 
-  var popup = window.open(authUrl, 'google_login', 'width=500,height=600');
+  var popup = window.open(authUrl, 'google_login', 'width=500,height=600,left=200,top=100');
   if (!popup) {
     done = true;
     cleanup();
-    alert('Popup bloklandi! Brauzer sozlamalarida ruxsat bering.');
+    alert('Popup bloklandi! Brauzer sozlamalarida popup ruxsat bering.');
     resetBtns();
   }
 }
