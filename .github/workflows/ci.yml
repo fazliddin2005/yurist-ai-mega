@@ -1,0 +1,54 @@
+name: Yurist AI CI
+
+on:
+  push:
+    branches: [main, master, dev]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Tests & lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 20 setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run riskEngine unit tests
+        run: node server/riskEngine.test.js
+        env:
+          NODE_ENV: test
+
+      - name: Check server loads without crash
+        run: |
+          node -e "
+            process.env.JWT_SECRET = 'ci-test-secret-32chars-min';
+            process.env.ADMIN_JWT_SECRET = 'ci-admin-secret-32chars-min';
+            try {
+              require('./server/index.js');
+              console.log('Server yuklandi - OK');
+              process.exit(0);
+            } catch(e) {
+              console.error('Server yuklanmadi:', e.message);
+              process.exit(1);
+            }
+          "
+
+      - name: Notify on failure (optional - Telegram)
+        if: failure()
+        run: |
+          if [ -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" ] && [ -n "${{ secrets.TELEGRAM_CHAT_ID }}" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+              -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+              -d "text=❌ Yurist AI CI muvaffaqiyatsiz: ${{ github.ref }} - ${{ github.sha }}"
+          fi

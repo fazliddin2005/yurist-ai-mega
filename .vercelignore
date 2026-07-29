@@ -1,0 +1,11 @@
+# pdf-parse test fayllarini (30MB+) deploy dan chiqarib tashlash
+# Vercel serverless function 50MB limitiga sig'ish uchun zarur
+node_modules/pdf-parse/test/
+node_modules/pdf-parse/lib/pdf.js
+
+# Boshqa keraksiz fayllar
+node_modules/.cache/
+*.test.js
+*.spec.js
+server/riskEngine.test.js
+server/test-fixtures/
